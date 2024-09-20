@@ -15,6 +15,8 @@ import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol'
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
 
+import { HTS } from './hedera/HTS.sol';
+
 /**
  * @title TokenHandler
  * @notice This interface is responsible for handling tokens before initiating an interchain token transfer, or after receiving one.
@@ -203,11 +205,23 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+        if (to == address(0)) revert AddressZero();
+        if (HTS.isToken(tokenAddress)) {
+            HTS.mintToken(tokenAddress, amount);
+            HTS.transferToken(tokenAddress, address(this), to, amount);
+        } else {
+            IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
+        }
     }
 
     function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
+        if (from == address(0)) revert AddressZero();
+        if (HTS.isToken(tokenAddress)) {
+            HTS.transferToken(tokenAddress, from, address(this), amount);
+            HTS.burnToken(tokenAddress, amount);
+        } else {
+            IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
+        }
     }
 
     function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
