@@ -11,6 +11,8 @@ import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 
+import { HTS, IHederaTokenService } from './hedera/HTS.sol';
+
 /**
  * @title InterchainTokenFactory
  * @notice This contract is responsible for deploying new interchain tokens and managing their token managers.
@@ -137,12 +139,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
 
         if (initialSupply > 0) {
-            IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
+            // Note: using validTokenAddress instead of interchainTokenAddress
+            // since HTS token addresses aren't deterministic
+            address tokenAddress = interchainTokenService.validTokenAddress(tokenId);
             ITokenManager tokenManager = ITokenManager(interchainTokenService.tokenManagerAddress(tokenId));
 
-            token.mint(sender, initialSupply);
+            tokenManager.mintToken(tokenAddress, sender, initialSupply);
 
-            token.transferMintership(minter);
             tokenManager.removeFlowLimiter(address(this));
 
             // If minter == address(0), we still set it as a flow limiter for consistency with the remote token manager.
@@ -255,6 +258,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
+
+        bool isHTSToken = HTS.isToken(tokenAddress);
+        if (isHTSToken) {
+            // Check if token is supported
+            if (!HTS.isTokenSupportedByITS(tokenAddress)) {
+                revert HTS.TokenUnsupported();
+            }
+        }
+
         bytes32 salt = canonicalInterchainTokenSalt(chainNameHash, tokenAddress);
 
         tokenId = interchainTokenService.deployTokenManager(salt, '', TokenManagerType.LOCK_UNLOCK, params, 0);
