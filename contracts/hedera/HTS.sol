@@ -9,6 +9,9 @@ import { IHederaTokenService } from './IHederaTokenService.sol';
  * @title HTS
  * @notice This library provides a set of functions to interact with the Hedera Token Service (HTS).
  * It includes functionalities for creating, transferring, minting, and burning tokens, as well as querying token information and associating tokens with accounts.
+ *
+ * @dev This library is a subset of the Hedera provided system library [HederaTokenService](https://github.com/hashgraph/hedera-smart-contracts/blob/bc3a549c0ca062c51b0045fd1916fdaa0558a360/contracts/system-contracts/hedera-token-service/HederaTokenService.sol).
+ * Functions are modified to revert instead of returning response codes.
  */
 library HTS {
     address private constant PRECOMPILE = address(0x167);
@@ -45,7 +48,7 @@ library HTS {
     /// @param token The token address
     /// @return isTokenFlag True if valid token found for the given address
     /// @dev This function reverts if the call is not successful
-    function isToken(address token) internal returns (bool isTokenFlag) {
+    function isToken(address token) public returns (bool isTokenFlag) {
         (bool success, bytes memory result) = PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.isToken.selector, token));
         int32 responseCode;
         (responseCode, isTokenFlag) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
@@ -58,7 +61,7 @@ library HTS {
     /// @param token The ID of the token as a solidity address
     /// @return tokenInfo TokenInfo
     /// @dev This function reverts if the call is not successful
-    function getTokenInfo(address token) internal returns (IHederaTokenService.TokenInfo memory tokenInfo) {
+    function getTokenInfo(address token) public returns (IHederaTokenService.TokenInfo memory tokenInfo) {
         (bool success, bytes memory result) = PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.getTokenInfo.selector, token));
         IHederaTokenService.TokenInfo memory defaultTokenInfo;
         int32 responseCode;
@@ -81,7 +84,7 @@ library HTS {
         IHederaTokenService.HederaToken memory token,
         int64 initialTotalSupply,
         int32 decimals
-    ) internal returns (address tokenAddress) {
+    ) public returns (address tokenAddress) {
         if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
             token.expiry.autoRenewPeriod = DEFAULT_AUTO_RENEW;
         }
@@ -105,7 +108,7 @@ library HTS {
     /// @param sender The sender for the transaction
     /// @param receiver The receiver of the transaction
     /// @param amount Non-negative value to send. a negative value will result in a failure.
-    function transferToken(address token, address sender, address receiver, uint256 amount) internal {
+    function transferToken(address token, address sender, address receiver, uint256 amount) public {
         if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
@@ -127,7 +130,7 @@ library HTS {
     ///               Amount must be a positive non-zero number represented in the lowest denomination of the
     ///               token. The new supply must be lower than 2^63.
     /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
-    function mintToken(address token, uint256 amount) internal returns (int64 newTotalSupply) {
+    function mintToken(address token, uint256 amount) public returns (int64 newTotalSupply) {
         if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
@@ -153,7 +156,7 @@ library HTS {
     ///                Amount must be a positive non-zero number, not bigger than the token balance of the treasury
     ///                account (0; balance], represented in the lowest denomination.
     /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
-    function burnToken(address token, uint256 amount) internal returns (int64 newTotalSupply) {
+    function burnToken(address token, uint256 amount) public returns (int64 newTotalSupply) {
         if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
@@ -183,7 +186,7 @@ library HTS {
     ///    ready to interact with the tokens.
     /// @param account The account to be associated with the provided tokens
     /// @param token The token to be associated with the provided account.
-    function associateToken(address account, address token) internal {
+    function associateToken(address account, address token) public {
         (bool success, bytes memory result) = PRECOMPILE.call(
             abi.encodeWithSelector(IHederaTokenService.associateToken.selector, account, token)
         );
@@ -201,7 +204,7 @@ library HTS {
     /// Checks if the Token is supported by ITS.
     /// @param token The token address to check.
     /// @return bridgeable If the token is supported.
-    function isTokenSupportedByITS(address token) internal returns (bool bridgeable) {
+    function isTokenSupportedByITS(address token) public returns (bool bridgeable) {
         IHederaTokenService.TokenInfo memory tokenInfo = getTokenInfo(token);
 
         bool hasUnsupportedKeys = false;
