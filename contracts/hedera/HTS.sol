@@ -179,7 +179,7 @@ library HTS {
     ///  If any of the provided tokens is not found, the transaction will resolve to INVALID_TOKEN_REF.
     ///  If any of the provided tokens has been deleted, the transaction will resolve to TOKEN_WAS_DELETED.
     ///  If an association between the provided account and any of the tokens already exists, the
-    ///  transaction will resolve to TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT.
+    ///  transaction resolves to TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, but the function doesn't revert.
     ///  If the provided account's associations count exceed the constraint of maximum token associations
     ///    per account, the transaction will resolve to TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED.
     ///  On success, associations between the provided account and tokens are made and the account is
@@ -192,6 +192,10 @@ library HTS {
         );
         int32 responseCode;
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+        // If the token is already associated to the account, we don't need to do anything (ie. we don't revert)
+        if (responseCode == HederaResponseCodes.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT) {
+            return;
+        }
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert HTSCallFailed(responseCode);
         }
