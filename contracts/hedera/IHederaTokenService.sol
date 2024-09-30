@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2;
 
 interface IHederaTokenService {
     /// Transfers cryptocurrency among two or more accounts by making the desired adjustments to their
