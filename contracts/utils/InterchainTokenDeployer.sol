@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import { IInterchainTokenDeployer } from '../interfaces/IInterchainTokenDeployer.sol';
-import { IInterchainToken } from '../interfaces/IInterchainToken.sol';
 
 import { HTS, IHederaTokenService } from '../hedera/HTS.sol';
 
@@ -12,12 +11,9 @@ import { HTS, IHederaTokenService } from '../hedera/HTS.sol';
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
  */
 contract InterchainTokenDeployer is IInterchainTokenDeployer {
-    /**
-     * @notice Constructor for the InterchainTokenDeployer contract.
-     * @param implementationAddress_ Address of the InterchainToken contract.
-     */
-    // solhint-disable-next-line no-unused-vars
-    constructor(address implementationAddress_) {}
+    error TokenIdZero();
+    error TokenNameEmpty();
+    error TokenSymbolEmpty();
 
     function implementationAddress() public pure returns (address) {
         return address(0);
@@ -33,7 +29,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
      * @return tokenAddress Address of the deployed token.
      */
     function deployInterchainToken(
-        bytes32 /*salt*/,
+        bytes32,
         bytes32 tokenId,
         address minter,
         string calldata name,
@@ -42,9 +38,9 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
     ) external returns (address tokenAddress) {
         // TODO(hedera) check if we can use salt, to prevent redeployments
 
-        if (tokenId == bytes32(0)) revert IInterchainToken.TokenIdZero();
-        if (bytes(name).length == 0) revert IInterchainToken.TokenNameEmpty();
-        if (bytes(symbol).length == 0) revert IInterchainToken.TokenSymbolEmpty();
+        if (tokenId == bytes32(0)) revert TokenIdZero();
+        if (bytes(name).length == 0) revert TokenNameEmpty();
+        if (bytes(symbol).length == 0) revert TokenSymbolEmpty();
 
         IHederaTokenService.HederaToken memory token;
         token.name = name;
@@ -97,7 +93,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
      * @notice Returns the interchain token deployment address.
      * @return tokenAddress The token address.
      */
-    function deployedAddress(bytes32 /*salt*/) external pure returns (address tokenAddress) {
+    function deployedAddress(bytes32) external pure returns (address tokenAddress) {
         return address(0);
     }
 }
