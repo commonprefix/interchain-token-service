@@ -9,7 +9,7 @@ import { IInterchainTokenService } from './interfaces/IInterchainTokenService.so
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
-import { IInterchainToken } from './interfaces/IInterchainToken.sol';
+import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 import { HTS, IHederaTokenService } from './hedera/HTS.sol';
 
@@ -178,18 +178,25 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         salt = interchainTokenSalt(chainNameHash, msg.sender, salt);
         tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
-        IInterchainToken token = IInterchainToken(interchainTokenService.interchainTokenAddress(tokenId));
-
-        tokenName = token.name();
-        tokenSymbol = token.symbol();
-        tokenDecimals = token.decimals();
-
-        if (minter != address(0)) {
-            if (!token.isMinter(minter)) revert NotMinter(minter);
-            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
-
-            minter_ = minter.toBytes();
+        // Note: using validTokenAddress instead of interchainTokenAddress
+        // since HTS token addresses aren't deterministic
+        address tokenAddress = interchainTokenService.validTokenAddress(tokenId);
+        IHederaTokenService.FungibleTokenInfo memory fTokenInfo = HTS.getFungibleTokenInfo(tokenAddress);
+        tokenName = fTokenInfo.tokenInfo.token.name;
+        tokenSymbol = fTokenInfo.tokenInfo.token.symbol;
+        int32 decimals = fTokenInfo.decimals;
+        if (decimals < 0 || decimals > int32(uint32(type(uint8).max))) {
+            revert HTS.InvalidTokenDecimals();
         }
+        tokenDecimals = uint8(uint32(decimals));
+
+        // TODO(hedera): check for HTS minter (supply key)
+        // if (minter != address(0)) {
+        //     if (!token.isMinter(minter)) revert NotMinter(minter);
+        //     if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+
+        //     minter_ = minter.toBytes();
+        // }
 
         tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
     }
@@ -285,18 +292,34 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint256 gasValue
     ) public payable returns (bytes32 tokenId) {
         bytes32 salt;
-        IInterchainToken token;
 
         // This ensures that the token manager has been deployed by this address, so it's safe to trust it.
         salt = canonicalInterchainTokenSalt(chainNameHash, originalTokenAddress);
         tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
-        token = IInterchainToken(interchainTokenService.validTokenAddress(tokenId));
+        address tokenAddress = interchainTokenService.validTokenAddress(tokenId);
 
-        // The 3 lines below will revert if the token does not exist.
-        string memory tokenName = token.name();
-        string memory tokenSymbol = token.symbol();
-        uint8 tokenDecimals = token.decimals();
+        string memory tokenName;
+        string memory tokenSymbol;
+        uint8 tokenDecimals;
         bytes memory minter = ''; // No additional minter is set on a canonical token deployment
+
+        bool isHTSToken = HTS.isToken(tokenAddress);
+        if (isHTSToken) {
+            IHederaTokenService.FungibleTokenInfo memory fTokenInfo = HTS.getFungibleTokenInfo(tokenAddress);
+            tokenName = fTokenInfo.tokenInfo.token.name;
+            tokenSymbol = fTokenInfo.tokenInfo.token.symbol;
+            int32 decimals = fTokenInfo.decimals;
+            if (decimals < 0 || decimals > int32(uint32(type(uint8).max))) {
+                revert HTS.InvalidTokenDecimals();
+            }
+            tokenDecimals = uint8(uint32(decimals));
+        } else {
+            IERC20Named token = IERC20Named(tokenAddress);
+            // The 3 lines below will revert if the token does not exist.
+            tokenName = token.name();
+            tokenSymbol = token.symbol();
+            tokenDecimals = token.decimals();
+        }
 
         tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter, gasValue);
     }

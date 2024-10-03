@@ -9,8 +9,9 @@ import { IHederaTokenService } from './IHederaTokenService.sol';
  * @notice This library provides a set of functions to interact with the Hedera Token Service (HTS).
  * It includes functionalities for creating, transferring, minting, and burning tokens, as well as querying token information and associating tokens with accounts.
  *
- * @dev This library is a subset of the Hedera provided system library [HederaTokenService](https://github.com/hashgraph/hedera-smart-contracts/blob/bc3a549c0ca062c51b0045fd1916fdaa0558a360/contracts/system-contracts/hedera-token-service/HederaTokenService.sol).
+ * @dev This library includes a subset of the Hedera provided system library [HederaTokenService](https://github.com/hashgraph/hedera-smart-contracts/blob/bc3a549c0ca062c51b0045fd1916fdaa0558a360/contracts/system-contracts/hedera-token-service/HederaTokenService.sol).
  * Functions are modified to revert instead of returning response codes.
+ * The library includes custom errors and additional functions.
  */
 library HTS {
     address private constant PRECOMPILE = address(0x167);
@@ -37,6 +38,9 @@ library HTS {
     /// @dev Thrown when the amount to mint/burn is invalid (negative or out of bounds).
     error InvalidAmount();
 
+    /// @dev Thrown when the token decimals are invalid. Max value is uint8 (255).
+    error InvalidTokenDecimals();
+
     /// @dev ITS cannot support KYC enabled tokens, or tokens with freeze, wipe or pause.
     error TokenUnsupported();
 
@@ -56,18 +60,19 @@ library HTS {
         }
     }
 
-    /// Retrieves general token info for a given token
+    /// Retrieves fungible specific token info for a fungible token
     /// @param token The ID of the token as a solidity address
-    /// @return tokenInfo TokenInfo
+    /// @return tokenInfo FungibleTokenInfo
     /// @dev This function reverts if the call is not successful
-    function getTokenInfo(address token) internal returns (IHederaTokenService.TokenInfo memory tokenInfo) {
-        (bool success, bytes memory result) = PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.getTokenInfo.selector, token));
-        IHederaTokenService.TokenInfo memory defaultTokenInfo;
+    function getFungibleTokenInfo(address token) internal returns (IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
+        (bool success, bytes memory result) = PRECOMPILE.call(
+            abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token)
+        );
+        IHederaTokenService.FungibleTokenInfo memory defaultTokenInfo;
         int32 responseCode;
         (responseCode, tokenInfo) = success
-            ? abi.decode(result, (int32, IHederaTokenService.TokenInfo))
+            ? abi.decode(result, (int32, IHederaTokenService.FungibleTokenInfo))
             : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
-
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert HTSCallFailed(responseCode);
         }
@@ -201,18 +206,18 @@ library HTS {
     }
 
     //
-    // Extra ITS functionality
+    // Extra functionality
     //
 
     /// Checks if the Token is supported by ITS.
     /// @param token The token address to check.
-    /// @return bridgeable If the token is supported.
-    function isTokenSupportedByITS(address token) internal returns (bool bridgeable) {
-        IHederaTokenService.TokenInfo memory tokenInfo = getTokenInfo(token);
+    /// @return supported If the token is supported.
+    function isTokenSupportedByITS(address token) internal returns (bool supported) {
+        IHederaTokenService.FungibleTokenInfo memory fTokenInfo = getFungibleTokenInfo(token);
 
         bool hasUnsupportedKeys = false;
-        for (uint256 i = 0; i < tokenInfo.token.tokenKeys.length; i++) {
-            uint256 keyType = tokenInfo.token.tokenKeys[i].keyType;
+        for (uint256 i = 0; i < fTokenInfo.tokenInfo.token.tokenKeys.length; i++) {
+            uint256 keyType = fTokenInfo.tokenInfo.token.tokenKeys[i].keyType;
             if ((keyType & (KYC_KEY_BIT | FREEZE_KEY_BIT | WIPE_KEY_BIT | PAUSE_KEY_BIT)) != 0) {
                 hasUnsupportedKeys = true;
                 break;
@@ -220,5 +225,20 @@ library HTS {
         }
 
         return !hasUnsupportedKeys;
+    }
+
+    /// Checks if the Token has a supply key of the provided minter.
+    /// @param token The token address to check.
+    /// @param minter The address to check for supply key.
+    /// @return If the minter is a supply key for the token.
+    function isAddressSupplyKey(address token, address minter) internal returns (bool) {
+        IHederaTokenService.FungibleTokenInfo memory fTokenInfo = getFungibleTokenInfo(token);
+        for (uint256 i = 0; i < fTokenInfo.tokenInfo.token.tokenKeys.length; i++) {
+            // TODO(hedera) check public key instead of contractId
+            if (fTokenInfo.tokenInfo.token.tokenKeys[i].key.contractId == minter) {
+                return true;
+            }
+        }
+        return false;
     }
 }
