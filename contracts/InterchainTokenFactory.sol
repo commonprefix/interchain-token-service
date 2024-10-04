@@ -136,7 +136,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             minterBytes = minter.toBytes();
         }
 
-        tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, 0);
+        tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, msg.value);
 
         if (initialSupply > 0) {
             // Note: using validTokenAddress instead of interchainTokenAddress
