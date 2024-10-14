@@ -181,7 +181,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
         if (from == address(0)) revert AddressZero();
         if (HTS.isToken(tokenAddress)) {
-            HTS.transferToken(tokenAddress, from, address(this), amount);
+            HTS.transferFrom(tokenAddress, from, address(this), amount);
             HTS.burnToken(tokenAddress, amount);
         } else {
             IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
@@ -189,14 +189,32 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
-        ITokenManager(tokenManager).mintToken(tokenAddress, to, amount);
+        if (to == address(0)) revert AddressZero();
+        if (HTS.isToken(tokenAddress)) {
+            HTS.mintToken(tokenAddress, amount);
+            HTS.transferToken(tokenAddress, address(this), to, amount);
+        } else {
+            ITokenManager(tokenManager).mintToken(tokenAddress, to, amount);
+        }
     }
 
     function _burnToken(address tokenManager, address tokenAddress, address from, uint256 amount) internal {
-        ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
+        if (from == address(0)) revert AddressZero();
+        if (HTS.isToken(tokenAddress)) {
+            HTS.transferFrom(tokenAddress, from, address(this), amount);
+            HTS.burnToken(tokenAddress, amount);
+        } else {
+            ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
+        }
     }
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
-        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
+        if (from == address(0)) revert AddressZero();
+        if (HTS.isToken(tokenAddress)) {
+            HTS.transferFrom(tokenAddress, from, address(this), amount);
+            HTS.burnToken(tokenAddress, amount);
+        } else {
+            IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
+        }
     }
 }

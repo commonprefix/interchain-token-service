@@ -128,31 +128,17 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         salt = interchainTokenSalt(chainNameHash, sender, salt);
         bytes memory minterBytes = new bytes(0);
 
-        if (initialSupply > 0) {
-            minterBytes = address(this).toBytes();
-        } else if (minter != address(0)) {
-            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
-
-            minterBytes = minter.toBytes();
+        // HTS Tokens don't support custom minters at the moment
+        // thus we can't verify the minter argument has the minter permission
+        if (minter != address(0)) {
+            revert HTS.CustomMinterUnsupported();
+        }
+        // and we don't support creating an initial supply
+        if (initialSupply != 0) {
+            revert HTS.InitialSupplyUnsupported();
         }
 
         tokenId = _deployInterchainToken(salt, '', name, symbol, decimals, minterBytes, msg.value);
-
-        if (initialSupply > 0) {
-            // Note: using validTokenAddress instead of interchainTokenAddress
-            // since HTS token addresses aren't deterministic
-            address tokenAddress = interchainTokenService.validTokenAddress(tokenId);
-            ITokenManager tokenManager = ITokenManager(interchainTokenService.tokenManagerAddress(tokenId));
-
-            tokenManager.mintToken(tokenAddress, sender, initialSupply);
-
-            tokenManager.removeFlowLimiter(address(this));
-
-            // If minter == address(0), we still set it as a flow limiter for consistency with the remote token manager.
-            tokenManager.addFlowLimiter(minter);
-
-            tokenManager.transferOperatorship(minter);
-        }
     }
 
     /**
@@ -175,6 +161,12 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint8 tokenDecimals;
         bytes memory minter_ = new bytes(0);
 
+        // HTS Tokens don't support custom minters at the moment
+        // thus we can't verify the minter argument has the minter permission
+        if (minter != address(0)) {
+            revert HTS.CustomMinterUnsupported();
+        }
+
         salt = interchainTokenSalt(chainNameHash, msg.sender, salt);
         tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
@@ -189,14 +181,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             revert HTS.InvalidTokenDecimals();
         }
         tokenDecimals = uint8(uint32(decimals));
-
-        // TODO(hedera): check for HTS minter (supply key)
-        // if (minter != address(0)) {
-        //     if (!token.isMinter(minter)) revert NotMinter(minter);
-        //     if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
-
-        //     minter_ = minter.toBytes();
-        // }
 
         tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
     }
