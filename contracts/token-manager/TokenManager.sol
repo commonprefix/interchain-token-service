@@ -217,7 +217,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
         if (to == address(0)) revert ZeroAddress();
         if (HTS.isToken(tokenAddress_)) {
             HTS.mintToken(tokenAddress_, amount);
-            HTS.transferToken(tokenAddress_, address(this), to, amount);
+            HTS.transferToken(tokenAddress_, msg.sender, to, amount);
         } else {
             IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
         }
@@ -233,7 +233,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
     function burnToken(address tokenAddress_, address from, uint256 amount) external onlyService {
         if (from == address(0)) revert ZeroAddress();
         if (HTS.isToken(tokenAddress_)) {
-            HTS.transferToken(tokenAddress_, from, address(this), amount);
+            HTS.transferFrom(tokenAddress_, from, msg.sender, amount);
             HTS.burnToken(tokenAddress_, amount);
         } else {
             IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));

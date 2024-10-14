@@ -44,6 +44,12 @@ library HTS {
     /// @dev ITS cannot support KYC enabled tokens, or tokens with freeze, wipe or pause.
     error TokenUnsupported();
 
+    /// @dev Currently HTS EVM supports only a single minter, which must be the iTS.
+    error CustomMinterUnsupported();
+
+    /// @dev HTS EVM only supports a single minter, creating a token with initial supply is unsupported.
+    error InitialSupplyUnsupported();
+
     /// @dev See HederaResponseCodes for a list of possible response codes.
     error HTSCallFailed(int32 responseCode);
 
@@ -119,6 +125,28 @@ library HTS {
         int64 amountInt64 = int64(int256(amount));
         (bool success, bytes memory result) = PRECOMPILE.call(
             abi.encodeWithSelector(IHederaTokenService.transferToken.selector, token, sender, receiver, amountInt64)
+        );
+        int32 responseCode;
+        responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert HTSCallFailed(responseCode);
+        }
+    }
+
+    /// Transfers `amount` tokens from `from` to `to` using the
+    ///  allowance mechanism. `amount` is then deducted from the caller's allowance.
+    /// Only applicable to fungible tokens
+    /// @param token The address of the fungible Hedera token to transfer
+    /// @param from The account address of the owner of the token, on the behalf of which to transfer `amount` tokens
+    /// @param to The account address of the receiver of the `amount` tokens
+    /// @param amount The amount of tokens to transfer from `from` to `to`
+    function transferFrom(address token, address from, address to, uint256 amount) external {
+        if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
+            revert InvalidAmount();
+        }
+        int64 amountInt64 = int64(int256(amount));
+        (bool success, bytes memory result) = PRECOMPILE.call(
+            abi.encodeWithSelector(IHederaTokenService.transferFrom.selector, token, from, to, amountInt64)
         );
         int32 responseCode;
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
