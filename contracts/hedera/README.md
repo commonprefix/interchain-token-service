@@ -1,6 +1,6 @@
 # Hedera ITS Support
 
-Cloned at `7df851d8a4ec4df819961d704bf3067ee8d37521`.
+Cloned at [`b4a68708c9a2e8098d1cac51d487b9d54661f66a`](https://github.com/axelarnetwork/interchain-token-service/tree/b4a68708c9a2e8098d1cac51d487b9d54661f66a).
 
 ## Overview
 
