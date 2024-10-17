@@ -214,13 +214,7 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      * @param amount The amount to mint.
      */
     function mintToken(address tokenAddress_, address to, uint256 amount) external onlyService {
-        if (to == address(0)) revert ZeroAddress();
-        if (HTS.isToken(tokenAddress_)) {
-            HTS.mintToken(tokenAddress_, amount);
-            HTS.transferToken(tokenAddress_, msg.sender, to, amount);
-        } else {
-            IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
-        }
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.mint.selector, to, amount));
     }
 
     /**
@@ -231,12 +225,6 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
      * @param amount The amount to burn.
      */
     function burnToken(address tokenAddress_, address from, uint256 amount) external onlyService {
-        if (from == address(0)) revert ZeroAddress();
-        if (HTS.isToken(tokenAddress_)) {
-            HTS.transferFrom(tokenAddress_, from, msg.sender, amount);
-            HTS.burnToken(tokenAddress_, amount);
-        } else {
-            IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
-        }
+        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20MintableBurnable.burn.selector, from, amount));
     }
 }
