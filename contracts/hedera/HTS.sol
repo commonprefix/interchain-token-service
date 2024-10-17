@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { HederaResponseCodes } from './HederaResponseCodes.sol';
-import { IHederaTokenService } from './IHederaTokenService.sol';
+import {HederaResponseCodes} from "./HederaResponseCodes.sol";
+import {IHederaTokenService} from "./IHederaTokenService.sol";
 
 /**
  * @title HTS
@@ -58,7 +58,8 @@ library HTS {
     /// @return isTokenFlag True if valid token found for the given address
     /// @dev This function reverts if the call is not successful
     function isToken(address token) internal returns (bool isTokenFlag) {
-        (bool success, bytes memory result) = PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.isToken.selector, token));
+        (bool success, bytes memory result) =
+            PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.isToken.selector, token));
         int32 responseCode;
         (responseCode, isTokenFlag) = success ? abi.decode(result, (int32, bool)) : (HederaResponseCodes.UNKNOWN, false);
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -70,10 +71,12 @@ library HTS {
     /// @param token The ID of the token as a solidity address
     /// @return tokenInfo FungibleTokenInfo
     /// @dev This function reverts if the call is not successful
-    function getFungibleTokenInfo(address token) internal returns (IHederaTokenService.FungibleTokenInfo memory tokenInfo) {
-        (bool success, bytes memory result) = PRECOMPILE.call(
-            abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token)
-        );
+    function getFungibleTokenInfo(address token)
+        internal
+        returns (IHederaTokenService.FungibleTokenInfo memory tokenInfo)
+    {
+        (bool success, bytes memory result) =
+            PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.getFungibleTokenInfo.selector, token));
         IHederaTokenService.FungibleTokenInfo memory defaultTokenInfo;
         int32 responseCode;
         (responseCode, tokenInfo) = success
@@ -90,21 +93,23 @@ library HTS {
     /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
     /// @param decimals the number of decimal places a token is divisible by
     /// @return tokenAddress the created token's address
-    function createFungibleToken(
-        IHederaTokenService.HederaToken memory token,
-        int64 initialTotalSupply,
-        int32 decimals
-    ) internal returns (address tokenAddress) {
+    function createFungibleToken(IHederaTokenService.HederaToken memory token, int64 initialTotalSupply, int32 decimals)
+        internal
+        returns (address tokenAddress)
+    {
         if (token.expiry.second == 0 && token.expiry.autoRenewPeriod == 0) {
             token.expiry.autoRenewPeriod = DEFAULT_AUTO_RENEW;
         }
 
-        (bool success, bytes memory result) = PRECOMPILE.call{ value: msg.value }(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector, token, initialTotalSupply, decimals)
+        (bool success, bytes memory result) = PRECOMPILE.call{value: msg.value}(
+            abi.encodeWithSelector(
+                IHederaTokenService.createFungibleToken.selector, token, initialTotalSupply, decimals
+            )
         );
 
         int32 responseCode;
-        (responseCode, tokenAddress) = success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
+        (responseCode, tokenAddress) =
+            success ? abi.decode(result, (int32, address)) : (HederaResponseCodes.UNKNOWN, address(0));
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert HTSCallFailed(responseCode);
@@ -140,7 +145,7 @@ library HTS {
     /// @param from The account address of the owner of the token, on the behalf of which to transfer `amount` tokens
     /// @param to The account address of the receiver of the `amount` tokens
     /// @param amount The amount of tokens to transfer from `from` to `to`
-    function transferFrom(address token, address from, address to, uint256 amount) external {
+    function transferFrom(address token, address from, address to, uint256 amount) internal {
         if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
@@ -173,7 +178,7 @@ library HTS {
             abi.encodeWithSelector(IHederaTokenService.mintToken.selector, token, amountInt64, metadata)
         );
         int32 responseCode;
-        (responseCode, newTotalSupply, ) = success
+        (responseCode, newTotalSupply,) = success
             ? abi.decode(result, (int32, int64, int64[]))
             : (HederaResponseCodes.UNKNOWN, int64(0), new int64[](0));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -198,7 +203,8 @@ library HTS {
             abi.encodeWithSelector(IHederaTokenService.burnToken.selector, token, amountInt64, serialNumbers)
         );
         int32 responseCode;
-        (responseCode, newTotalSupply) = success ? abi.decode(result, (int32, int64)) : (HederaResponseCodes.UNKNOWN, int64(0));
+        (responseCode, newTotalSupply) =
+            success ? abi.decode(result, (int32, int64)) : (HederaResponseCodes.UNKNOWN, int64(0));
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert HTSCallFailed(responseCode);
         }
@@ -219,9 +225,8 @@ library HTS {
     /// @param account The account to be associated with the provided tokens
     /// @param token The token to be associated with the provided account.
     function associateToken(address account, address token) internal {
-        (bool success, bytes memory result) = PRECOMPILE.call(
-            abi.encodeWithSelector(IHederaTokenService.associateToken.selector, account, token)
-        );
+        (bool success, bytes memory result) =
+            PRECOMPILE.call(abi.encodeWithSelector(IHederaTokenService.associateToken.selector, account, token));
         int32 responseCode;
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
         // If the token is already associated to the account, we don't need to do anything (ie. we don't revert)
