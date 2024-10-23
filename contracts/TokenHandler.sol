@@ -172,6 +172,7 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         // Approval can be refreshed in the future if needed for certain tokens via an upgrade, but realistically should never be exhausted.
         if (tokenManagerType == uint256(TokenManagerType.GATEWAY)) {
             address token = ITokenManager(tokenManager).tokenAddress();
+            // TODO(hedera) check if gateway token could be an hts token, and approve with int64.max if so
             _approveGateway(token, UINT256_MAX);
         }
     }
