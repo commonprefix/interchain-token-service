@@ -8,6 +8,9 @@ pragma solidity ^0.8.0;
  */
 interface IInterchainTokenDeployer {
     error AddressZero();
+    error TokenIdZero();
+    error TokenNameEmpty();
+    error TokenSymbolEmpty();
     error TokenDeploymentFailed();
 
     /**
@@ -40,5 +43,5 @@ interface IInterchainTokenDeployer {
         string calldata name,
         string calldata symbol,
         uint8 decimals
-    ) external returns (address tokenAddress);
+    ) external payable returns (address tokenAddress);
 }

@@ -11,10 +11,6 @@ import { HTS, IHederaTokenService } from '../hedera/HTS.sol';
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
  */
 contract InterchainTokenDeployer is IInterchainTokenDeployer {
-    error TokenIdZero();
-    error TokenNameEmpty();
-    error TokenSymbolEmpty();
-
     function implementationAddress() public pure returns (address) {
         return address(0);
     }
@@ -34,7 +30,7 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         string calldata name,
         string calldata symbol,
         uint8 decimals
-    ) external returns (address tokenAddress) {
+    ) external payable returns (address tokenAddress) {
         // TODO(hedera) check if we can use salt, to prevent redeployments
 
         // Since ITS uses delegatecall `this` refers to the ITS contract
@@ -52,7 +48,6 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         // Set the token service as a minter to allow it to mint and burn tokens.
         // Also add the provided address as a minter, if set.
         IHederaTokenService.TokenKey[] memory tokenKeys = new IHederaTokenService.TokenKey[](1);
-
         // Define the supply keys - minter
         IHederaTokenService.KeyValue memory supplyKeyITS = IHederaTokenService.KeyValue({
             inheritAccountKey: false,
@@ -62,8 +57,12 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
             delegatableContractId: address(0)
         });
         tokenKeys[0] = IHederaTokenService.TokenKey({ keyType: HTS.SUPPLY_KEY_BIT, key: supplyKeyITS });
-
         token.tokenKeys = tokenKeys;
+
+        // Set some default values for the expiry
+        // NOTE: Expiry is currently disabled on Hedera
+        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(0, its, 8000000);
+        token.expiry = expiry;
 
         address createdTokenAddress = HTS.createFungibleToken(token, 0, int32(uint32(decimals)));
 
