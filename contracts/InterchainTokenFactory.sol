@@ -128,12 +128,15 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         salt = interchainTokenSalt(chainNameHash, sender, salt);
         bytes memory minterBytes = new bytes(0);
 
-        // HTS Tokens don't support custom minters at the moment
-        // thus we can't verify the minter argument has the minter permission
         if (minter != address(0)) {
-            revert HTS.CustomMinterUnsupported();
+            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+
+            minterBytes = minter.toBytes();
         }
-        // and we don't support creating an initial supply
+
+        // HTS tokens must previously be associated with an account
+        // to be able to send tokens to it. Since a new token will be created
+        // it's not possible to send it right away.
         if (initialSupply != 0) {
             revert HTS.InitialSupplyUnsupported();
         }
@@ -161,12 +164,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         uint8 tokenDecimals;
         bytes memory minter_ = new bytes(0);
 
-        // HTS Tokens don't support custom minters at the moment
-        // thus we can't verify the minter argument has the minter permission
-        if (minter != address(0)) {
-            revert HTS.CustomMinterUnsupported();
-        }
-
         salt = interchainTokenSalt(chainNameHash, msg.sender, salt);
         tokenId = interchainTokenService.interchainTokenId(TOKEN_FACTORY_DEPLOYER, salt);
 
@@ -181,6 +178,13 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
             revert HTS.InvalidTokenDecimals();
         }
         tokenDecimals = uint8(uint32(decimals));
+
+        if (minter != address(0)) {
+            if (!interchainTokenService.isTokenMinter(tokenAddress, minter)) revert NotMinter(minter);
+            if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+
+            minter_ = minter.toBytes();
+        }
 
         tokenId = _deployInterchainToken(salt, destinationChain, tokenName, tokenSymbol, tokenDecimals, minter_, gasValue);
     }

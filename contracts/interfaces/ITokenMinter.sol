@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @title ITokenMinter Interface
+ * @notice
+ */
+interface ITokenMinter {
+    error MissingMinterPermission();
+
+    /**
+     * @notice Change the minter of the contract.
+     * @dev Can only be called by the current minter.
+     * @param token The address of the token.
+     * @param minter The address of the new minter.
+     */
+    function transferTokenMintership(address token, address minter) external;
+
+    /**
+     * @notice Query if an address is a minter
+     * @param token the address of the token
+     * @param addr the address to query for
+     * @return bool Boolean value representing whether or not the address is a minter.
+     */
+    function isTokenMinter(address token, address addr) external view returns (bool);
+}

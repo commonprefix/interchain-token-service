@@ -11,6 +11,7 @@ import { ITransmitInterchainToken } from './ITransmitInterchainToken.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
 import { IOperator } from './IOperator.sol';
+import { ITokenMinter } from './ITokenMinter.sol';
 import { IAddressTracker } from './IAddressTracker.sol';
 
 /**
@@ -23,6 +24,7 @@ interface IInterchainTokenService is
     ITokenManagerImplementation,
     IAxelarValuedExpressExecutable,
     IOperator,
+    ITokenMinter,
     IPausable,
     IMulticall,
     IAddressTracker,
