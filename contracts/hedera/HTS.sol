@@ -268,19 +268,4 @@ library HTS {
 
         return !hasUnsupportedKeys;
     }
-
-    /// Checks if the Token has a supply key of the provided minter.
-    /// @param token The token address to check.
-    /// @param minter The address to check for supply key.
-    /// @return If the minter is a supply key for the token.
-    function isAddressSupplyKey(address token, address minter) internal returns (bool) {
-        IHederaTokenService.FungibleTokenInfo memory fTokenInfo = getFungibleTokenInfo(token);
-        for (uint256 i = 0; i < fTokenInfo.tokenInfo.token.tokenKeys.length; i++) {
-            // TODO(hedera) check public key instead of contractId
-            if (fTokenInfo.tokenInfo.token.tokenKeys[i].key.contractId == minter) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

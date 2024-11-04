@@ -46,6 +46,17 @@ const compilerSettings = {
     },
 };
 
+const itsCompilerSettings = {
+    ...compilerSettings,
+    settings: {
+        ...compilerSettings.settings,
+        optimizer: {
+            ...optimizerSettings,
+            runs: 10,
+        },
+    },
+};
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -56,6 +67,7 @@ module.exports = {
         overrides: process.env.NO_OVERRIDES
             ? {}
             : {
+                  'contracts/InterchainTokenService.sol': itsCompilerSettings,
                   'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
                   'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
