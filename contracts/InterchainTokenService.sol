@@ -158,11 +158,9 @@ contract InterchainTokenService is
         gatewayCaller = gatewayCaller_;
     }
 
-    /**
-     * \
-     * MODIFIERS
-     * \******
-     */
+    /*******\
+    MODIFIERS
+    \*******/
 
     /**
      * @notice This modifier is used to ensure that only a remote InterchainTokenService can invoke the execute function.
@@ -175,11 +173,9 @@ contract InterchainTokenService is
         _;
     }
 
-    /**
-     * \
-     * GETTERS
-     * \****
-     */
+    /*****\
+    GETTERS
+    \*****/
 
     /**
      * @notice Getter for the contract id.
@@ -280,11 +276,9 @@ contract InterchainTokenService is
         flowInAmount_ = tokenManager_.flowInAmount();
     }
 
-    /**
-     * \
-     * USER FUNCTIONS
-     * \***********
-     */
+    /************\
+    USER FUNCTIONS
+    \************/
 
     /**
      * @notice Used to deploy remote custom TokenManagers.
@@ -536,11 +530,9 @@ contract InterchainTokenService is
         );
     }
 
-    /**
-     * \
-     * TOKEN ONLY FUNCTIONS
-     * \*****************
-     */
+    /******************\
+    TOKEN ONLY FUNCTIONS
+    \******************/
 
     /**
      * @notice Transmit an interchain transfer for the given tokenId.
@@ -567,11 +559,9 @@ contract InterchainTokenService is
         _transmitInterchainTransfer(tokenId, sourceAddress, destinationChain, destinationAddress, amount, metadataVersion, data, msg.value);
     }
 
-    /**
-     * \
-     * OWNER FUNCTIONS
-     * \************
-     */
+    /*************\
+    OWNER FUNCTIONS
+    \*************/
 
     /**
      * @notice Used to set a flow limit for a token manager that has the service as its operator.
@@ -618,11 +608,10 @@ contract InterchainTokenService is
         }
     }
 
-    /**
-     * \
-     * INTERNAL FUNCTIONS
-     * \***************
-     */
+    /****************\
+    INTERNAL FUNCTIONS
+    \****************/
+
     function _setup(bytes calldata params) internal override {
         (address operator, string memory chainName_, string[] memory trustedChainNames, string[] memory trustedAddresses) = abi.decode(
             params,
@@ -1000,7 +989,7 @@ contract InterchainTokenService is
         }
 
         /**
-         * @dev Add the provided address as a minter to allow it to mint and burn tokens.
+         * @dev Add the provided address as a minter to allow it to mint and burn tokens via ITS.
          * If `address(0)` was provided, add it as a minter to allow
          * anyone to easily check that no custom minter was set.
          */

@@ -19,12 +19,13 @@ contract TokenMinter is ITokenMinter {
     }
 
     /**
-     * @notice Internal function that stores the new minter address in the correct storage slot.
+     * @notice Internal function that add a new minter.
      * @param minter The address of the new minter.
      * @param token the address of the token
      */
     function _addTokenMinter(address token, address minter) internal {
         tokenMinters[token][minter] = true;
+        emit TokenMinterAdded(token, minter);
     }
 
     /**
@@ -36,6 +37,8 @@ contract TokenMinter is ITokenMinter {
     function transferTokenMintership(address token, address minter) external onlyTokenMinter(token) {
         delete tokenMinters[token][msg.sender];
         tokenMinters[token][minter] = true;
+        emit TokenMinterRemoved(token, msg.sender);
+        emit TokenMinterAdded(token, minter);
     }
 
     /**

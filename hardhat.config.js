@@ -52,6 +52,7 @@ const itsCompilerSettings = {
         ...compilerSettings.settings,
         optimizer: {
             ...optimizerSettings,
+            // Optimize ITS contract for size
             runs: 10,
         },
     },
