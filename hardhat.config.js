@@ -52,8 +52,8 @@ const itsCompilerSettings = {
         ...compilerSettings.settings,
         optimizer: {
             ...optimizerSettings,
-            // Optimize ITS contract for size
-            runs: 10,
+            // Optimize ITS contract to fit into the 24576 bytes limit
+            runs: 1,
         },
     },
 };

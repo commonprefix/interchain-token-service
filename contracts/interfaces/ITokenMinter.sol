@@ -8,10 +8,6 @@ pragma solidity ^0.8.0;
  */
 interface ITokenMinter {
     error MissingMinterPermission();
-    error NotNativeInterchainToken();
-
-    event TokenMinterAdded(address indexed token, address indexed account);
-    event TokenMinterRemoved(address indexed token, address indexed account);
 
     /**
      * @notice Change the minter of the contract.

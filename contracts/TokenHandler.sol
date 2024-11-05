@@ -169,7 +169,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
-        if (to == address(0)) revert AddressZero();
         if (HTS.isToken(tokenAddress)) {
             HTS.mintToken(tokenAddress, amount);
             HTS.transferToken(tokenAddress, address(this), to, amount);
@@ -179,7 +178,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
-        if (from == address(0)) revert AddressZero();
         if (HTS.isToken(tokenAddress)) {
             HTS.transferFrom(tokenAddress, from, address(this), amount);
             HTS.burnToken(tokenAddress, amount);
@@ -189,7 +187,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
-        if (to == address(0)) revert AddressZero();
         if (HTS.isToken(tokenAddress)) {
             HTS.mintToken(tokenAddress, amount);
             HTS.transferToken(tokenAddress, address(this), to, amount);
@@ -199,7 +196,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _burnToken(address tokenManager, address tokenAddress, address from, uint256 amount) internal {
-        if (from == address(0)) revert AddressZero();
         if (HTS.isToken(tokenAddress)) {
             HTS.transferFrom(tokenAddress, from, address(this), amount);
             HTS.burnToken(tokenAddress, amount);
@@ -209,7 +205,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
-        if (from == address(0)) revert AddressZero();
         if (HTS.isToken(tokenAddress)) {
             HTS.transferFrom(tokenAddress, from, address(this), amount);
             HTS.burnToken(tokenAddress, amount);

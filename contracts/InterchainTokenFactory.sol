@@ -100,7 +100,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      * @return tokenAddress The address of the interchain token.
      */
     function interchainTokenAddress(address deployer, bytes32 salt) public view returns (address tokenAddress) {
-        tokenAddress = interchainTokenService.interchainTokenAddress(interchainTokenId(deployer, salt));
+        tokenAddress = interchainTokenService.validTokenAddress(interchainTokenId(deployer, salt));
     }
 
     /**

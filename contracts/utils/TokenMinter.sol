@@ -13,9 +13,8 @@ import { HTS } from '../hedera/HTS.sol';
 contract TokenMinter is ITokenMinter {
     mapping(address => mapping(address => bool)) private tokenMinters;
 
-    modifier onlyTokenMinter(address token) {
+    function onlyTokenMinter(address token) private view {
         if (!tokenMinters[token][msg.sender]) revert MissingMinterPermission();
-        _;
     }
 
     /**
@@ -25,7 +24,6 @@ contract TokenMinter is ITokenMinter {
      */
     function _addTokenMinter(address token, address minter) internal {
         tokenMinters[token][minter] = true;
-        emit TokenMinterAdded(token, minter);
     }
 
     /**
@@ -34,11 +32,10 @@ contract TokenMinter is ITokenMinter {
      * @param token The address of the token
      * @param minter The address of the new minter.
      */
-    function transferTokenMintership(address token, address minter) external onlyTokenMinter(token) {
+    function transferTokenMintership(address token, address minter) external {
+        onlyTokenMinter(token);
         delete tokenMinters[token][msg.sender];
         tokenMinters[token][minter] = true;
-        emit TokenMinterRemoved(token, msg.sender);
-        emit TokenMinterAdded(token, minter);
     }
 
     /**
@@ -59,10 +56,8 @@ contract TokenMinter is ITokenMinter {
      * @param account The address that will receive the minted tokens.
      * @param amount The amount of tokens to mint.
      */
-    function mintToken(address token, address account, uint256 amount) external onlyTokenMinter(token) {
-        if (!HTS.isToken(token)) {
-            revert NotNativeInterchainToken();
-        }
+    function mintToken(address token, address account, uint256 amount) external {
+        onlyTokenMinter(token);
         HTS.mintToken(token, amount);
         HTS.transferToken(token, address(this), account, amount);
     }
@@ -76,10 +71,8 @@ contract TokenMinter is ITokenMinter {
      * @param account The address that will have its tokens burnt.
      * @param amount The amount of tokens to burn.
      */
-    function burnToken(address token, address account, uint256 amount) external onlyTokenMinter(token) {
-        if (!HTS.isToken(token)) {
-            revert NotNativeInterchainToken();
-        }
+    function burnToken(address token, address account, uint256 amount) external {
+        onlyTokenMinter(token);
         HTS.transferFrom(token, account, address(this), amount);
         HTS.burnToken(token, amount);
     }
