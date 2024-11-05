@@ -180,8 +180,8 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
         tokenDecimals = uint8(uint32(decimals));
 
         if (minter != address(0)) {
-            if (!interchainTokenService.isTokenMinter(tokenAddress, minter)) revert NotMinter(minter);
             if (minter == address(interchainTokenService)) revert InvalidMinter(minter);
+            if (!interchainTokenService.isTokenMinter(tokenAddress, minter)) revert NotMinter(minter);
 
             minter_ = minter.toBytes();
         }
