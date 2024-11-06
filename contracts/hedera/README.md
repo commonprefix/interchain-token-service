@@ -1,10 +1,10 @@
 # Hedera ITS Support
 
-Cloned at [`b4a68708c9a2e8098d1cac51d487b9d54661f66a`](https://github.com/axelarnetwork/interchain-token-service/tree/b4a68708c9a2e8098d1cac51d487b9d54661f66a).
+Cloned at [`97632b9372125e0a88452d05d8b7adb880b7096b`](https://github.com/axelarnetwork/interchain-token-service/tree/97632b9372125e0a88452d05d8b7adb880b7096b).
 
 ## Overview
 
-ITS contracts in this repo are modified to support Hedera Token Service. All new interchain tokens will be created via HTS, while existing HTS and ERC20 tokens are supported for registration. New HTS tokens will have `InterchainTokenService` as the sole Supply Key (MinterBurner) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. ITS uses typical `allowance` and `transferFrom` to move tokens before burning. Certain ITS features are not supported due to HTS limitations, such as custom minters and initial supply.
+ITS contracts in this repo are modified to support Hedera Token Service. All new interchain tokens will be created via HTS, while existing HTS and ERC20 tokens are supported for registration. New HTS Interchain tokens will have `InterchainTokenService` as the sole Supply Key (MinterBurner) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. ITS uses typical `allowance` and `transferFrom` to move tokens before burning. ITS keeps track of minters and allows for external minting and burning (see `TokenMinter.sol`). Certain ITS features are not supported due to HTS limitations, such as initial supply.
 
 ### Hedera-related Notes
 
@@ -20,7 +20,8 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 
 - Both HTS tokens and ERC20 tokens are supported for registration.
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
+- `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `validTokenAddress` should be used instead.
 - When creating a new interchain token, `InterchainTokenService` and `TokenManager` are associated with the token.
 - When registering a canonical token, only the `TokenManager` is associated with the token.
 - `TokenHandler`'s `_giveInterchainToken` and `_takeInterchainToken` interact with the HTS directly — it is assumed the methods are called by the `InterchainTokenService` contract. `TokenManager` is still used for ERC20 tokens, lock-unlock and flow limits.
-- Custom `minter` and `initialSupply` aren't currently supported when deploying a new interchain token on Hedera, due to the limitations of the HTS system contract.
+- `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.

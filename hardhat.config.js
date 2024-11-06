@@ -52,6 +52,7 @@ const itsCompilerSettings = {
         ...compilerSettings.settings,
         optimizer: {
             ...optimizerSettings,
+            // TODO(hedera) optimize ITS contract further, and increase the runs value.
             // Optimize ITS contract to fit into the 24576 bytes limit
             runs: 1,
         },

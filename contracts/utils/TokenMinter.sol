@@ -7,12 +7,14 @@ import { HTS } from '../hedera/HTS.sol';
 
 /**
  * @title TokenMinter Contract
- * @notice
+ * @notice Allows custom minters to mint and HTS tokens via ITS. Mintership can be transferred.
  * @dev This module is used through inheritance.
  */
 contract TokenMinter is ITokenMinter {
     mapping(address => mapping(address => bool)) private tokenMinters;
 
+    // TODO(hedera) switch to modifier
+    // Due to size limitations, a function is used to lower the size of the contract.
     function onlyTokenMinter(address token) private view {
         if (!tokenMinters[token][msg.sender]) revert MissingMinterPermission();
     }
