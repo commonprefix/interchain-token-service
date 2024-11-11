@@ -15,6 +15,7 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 - `HTS.sol` library is a subset of the Hedera provided system library [HederaTokenService](https://github.com/hashgraph/hedera-smart-contracts/blob/bc3a549c0ca062c51b0045fd1916fdaa0558a360/contracts/system-contracts/hedera-token-service/HederaTokenService.sol). Functions are modified to revert instead of returning response codes.
 - Currently new tokens created via HTS EVM system contract can have **only one** Supply Key (Minter).
 - Currently new tokens created via HTS EVM system contract must have the Treasury be the creator of the token.
+- `createFungibleToken` in `HTS.sol` uses `msg.value` to pay for token creation, alongside regular gas fee.
 
 ### ITS-related Notes
 
@@ -25,3 +26,4 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 - When registering a canonical token, only the `TokenManager` is associated with the token.
 - `TokenHandler`'s `_giveInterchainToken` and `_takeInterchainToken` interact with the HTS directly — it is assumed the methods are called by the `InterchainTokenService` contract. `TokenManager` is still used for ERC20 tokens, lock-unlock and flow limits.
 - `initialSupply` isn't supported when deploying a new interchain token. To receive tokens, an account needs to previously associate with the token, thus it cannot immediately receive tokens after creation.
+- When deploying a new interchain token, a Hedera-specific token-creation fee must be sent as value. For this reason, the `deployInterchainToken` method is payable.
