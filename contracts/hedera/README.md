@@ -21,7 +21,7 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 
 - Both HTS tokens and ERC20 tokens are supported for registration.
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
-- `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `validTokenAddress` should be used instead.
+- `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
 - When creating a new interchain token, `InterchainTokenService` and `TokenManager` are associated with the token.
 - When registering a canonical token, only the `TokenManager` is associated with the token.
 - `TokenHandler`'s `_giveInterchainToken` and `_takeInterchainToken` interact with the HTS directly — it is assumed the methods are called by the `InterchainTokenService` contract. `TokenManager` is still used for ERC20 tokens, lock-unlock and flow limits.

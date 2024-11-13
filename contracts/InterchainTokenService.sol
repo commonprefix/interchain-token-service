@@ -196,24 +196,27 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Returns the address of a TokenManager from a specific tokenId.
-     * @dev The TokenManager needs to exist already.
-     * @param tokenId The tokenId.
-     * @return tokenManagerAddress_ The deployment address of the TokenManager.
+     * @notice Returns the instance of ITokenManager from a specific tokenId.
+     * @dev This function checks if a token manager contract exists at the address for the specified tokenId.
+     * If no token manager is deployed for the tokenId, the function will revert with `TokenManagerDoesNotExist`.
+     * @param tokenId The tokenId of the deployed token manager.
+     * @return tokenManager_ The instance of ITokenManager associated with the specified tokenId.
      */
-    function validTokenManagerAddress(bytes32 tokenId) public view returns (address tokenManagerAddress_) {
-        tokenManagerAddress_ = tokenManagerAddress(tokenId);
+    function deployedTokenManager(bytes32 tokenId) public view returns (ITokenManager tokenManager_) {
+        address tokenManagerAddress_ = tokenManagerAddress(tokenId);
         if (tokenManagerAddress_.code.length == 0) revert TokenManagerDoesNotExist(tokenId);
+        tokenManager_ = ITokenManager(tokenManagerAddress_);
     }
 
     /**
      * @notice Returns the address of the token that an existing tokenManager points to.
-     * @param tokenId The tokenId.
+     * @dev This function requires that a token manager is already deployed for the specified tokenId.
+     * It will call `deployedTokenManager` to get the token manager and return the address of the associated token.
+     * @param tokenId The tokenId of the registered token.
      * @return tokenAddress The address of the token.
      */
-    function validTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        address tokenManagerAddress_ = validTokenManagerAddress(tokenId);
-        tokenAddress = ITokenManager(tokenManagerAddress_).tokenAddress();
+    function registeredTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
+        tokenAddress = ITokenManager(deployedTokenManager(tokenId)).tokenAddress();
     }
 
     /**
@@ -241,8 +244,7 @@ contract InterchainTokenService is
      * @return flowLimit_ The flow limit.
      */
     function flowLimit(bytes32 tokenId) external view returns (uint256 flowLimit_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
-        flowLimit_ = tokenManager_.flowLimit();
+        flowLimit_ = deployedTokenManager(tokenId).flowLimit();
     }
 
     /**
@@ -251,8 +253,7 @@ contract InterchainTokenService is
      * @return flowOutAmount_ The flow out amount.
      */
     function flowOutAmount(bytes32 tokenId) external view returns (uint256 flowOutAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
-        flowOutAmount_ = tokenManager_.flowOutAmount();
+        flowOutAmount_ = deployedTokenManager(tokenId).flowOutAmount();
     }
 
     /**
@@ -261,8 +262,7 @@ contract InterchainTokenService is
      * @return flowInAmount_ The flow in amount.
      */
     function flowInAmount(bytes32 tokenId) external view returns (uint256 flowInAmount_) {
-        ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenId));
-        flowInAmount_ = tokenManager_.flowInAmount();
+        flowInAmount_ = deployedTokenManager(tokenId).flowInAmount();
     }
 
     /************\
@@ -273,6 +273,11 @@ contract InterchainTokenService is
      * @notice Used to deploy remote custom TokenManagers.
      * @dev At least the `gasValue` amount of native token must be passed to the function call. `gasValue` exists because this function can be
      * part of a multicall involving multiple functions that could make remote contract calls.
+     * This method is temporarily restricted in the following scenarios:
+     * - Deploying to a remote chain and the destination chain is connected via ITS Hub
+     * - Deploying to the current chain, if connected as an Amplifier chain, i.e existing ITS contracts on consensus chains aren't affected.
+     * Once ITS Hub adds support for deploy token manager msg, the restriction will be lifted.
+     * Note that the factory contract can still call `deployTokenManager` to facilitate canonical token registration.
      * @param salt The salt to be used during deployment.
      * @param destinationChain The name of the chain to deploy the TokenManager and standardized token to.
      * @param tokenManagerType The type of token manager to be deployed. Cannot be NATIVE_INTERCHAIN_TOKEN.
@@ -287,6 +292,8 @@ contract InterchainTokenService is
         bytes calldata params,
         uint256 gasValue
     ) external payable whenNotPaused returns (bytes32 tokenId) {
+        if (bytes(params).length == 0) revert EmptyParams();
+
         // Custom token managers can't be deployed with native interchain token type, which is reserved for interchain tokens
         if (tokenManagerType == TokenManagerType.NATIVE_INTERCHAIN_TOKEN) revert CannotDeploy(tokenManagerType);
 
@@ -294,6 +301,9 @@ contract InterchainTokenService is
 
         if (deployer == interchainTokenFactory) {
             deployer = TOKEN_FACTORY_DEPLOYER;
+        } else if (bytes(destinationChain).length == 0 && trustedAddressHash(chainName()) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Restricted on ITS contracts deployed to Amplifier chains until ITS Hub adds support
+            revert NotSupported();
         }
 
         tokenId = interchainTokenId(deployer, salt);
@@ -372,6 +382,7 @@ contract InterchainTokenService is
 
     /**
      * @notice Express executes operations based on the payload and selector.
+     * @dev This function is `payable` because non-payable functions cannot be called in a multicall that calls other `payable` functions.
      * @param commandId The unique message id.
      * @param sourceChain The chain where the transaction originates from.
      * @param sourceAddress The address of the remote ITS where the transaction originates from.
@@ -505,6 +516,7 @@ contract InterchainTokenService is
         uint256 gasValue
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
+
         amount = _takeToken(tokenId, msg.sender, amount, false);
 
         _transmitInterchainTransfer(
@@ -562,9 +574,8 @@ contract InterchainTokenService is
         if (length != flowLimits.length) revert LengthMismatch();
 
         for (uint256 i; i < length; ++i) {
-            ITokenManager tokenManager_ = ITokenManager(validTokenManagerAddress(tokenIds[i]));
             // slither-disable-next-line calls-loop
-            tokenManager_.setFlowLimit(flowLimits[i]);
+            deployedTokenManager(tokenIds[i]).setFlowLimit(flowLimits[i]);
         }
     }
 
@@ -780,6 +791,9 @@ contract InterchainTokenService is
 
         // Check whether the ITS call should be routed via ITS hub for this destination chain
         if (keccak256(abi.encodePacked(destinationAddress)) == ITS_HUB_ROUTING_IDENTIFIER_HASH) {
+            // Prevent deploy token manager to be usable on ITS hub
+            if (_getMessageType(payload) == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) revert NotSupported();
+
             // Wrap ITS message in an ITS Hub message
             payload = abi.encode(MESSAGE_TYPE_SEND_TO_HUB, destinationChain, payload);
             destinationChain = ITS_HUB_CHAIN_NAME;
@@ -848,6 +862,9 @@ contract InterchainTokenService is
 
             // Get message type of the inner ITS message
             messageType = _getMessageType(payload);
+
+            // Prevent deploy token manager to be usable on ITS hub
+            if (messageType == MESSAGE_TYPE_DEPLOY_TOKEN_MANAGER) revert NotSupported();
         } else {
             // Prevent receiving a direct message from the ITS Hub. This is not supported yet.
             if (keccak256(abi.encodePacked(sourceChain)) == ITS_HUB_CHAIN_NAME_HASH) revert UntrustedChain();
@@ -872,7 +889,7 @@ contract InterchainTokenService is
         bytes calldata params
     ) internal {
         // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
+        deployedTokenManager(tokenId);
 
         emit TokenManagerDeploymentStarted(tokenId, destinationChain, tokenManagerType, params);
 
@@ -900,8 +917,11 @@ contract InterchainTokenService is
         string calldata destinationChain,
         uint256 gasValue
     ) internal {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
         // slither-disable-next-line unused-return
-        validTokenManagerAddress(tokenId);
+        deployedTokenManager(tokenId);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTokenDeploymentStarted(tokenId, name, symbol, decimals, minter, destinationChain);
@@ -1027,6 +1047,7 @@ contract InterchainTokenService is
         bytes memory data,
         uint256 gasValue
     ) internal {
+        if (destinationAddress.length == 0) revert EmptyDestinationAddress();
         if (amount == 0) revert ZeroAmount();
 
         // slither-disable-next-line reentrancy-events
@@ -1090,7 +1111,7 @@ contract InterchainTokenService is
             revert InvalidExpressMessageType(messageType);
         }
 
-        return (validTokenAddress(tokenId), amount);
+        return (registeredTokenAddress(tokenId), amount);
     }
 
     function _getExpressExecutorAndEmitEvent(
