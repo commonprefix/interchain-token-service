@@ -7,7 +7,6 @@ import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/in
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
 
-import { ITransmitInterchainToken } from './ITransmitInterchainToken.sol';
 import { ITokenManager } from './ITokenManager.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
@@ -20,7 +19,6 @@ import { IAddressTracker } from './IAddressTracker.sol';
  * @notice Interface for the Interchain Token Service
  */
 interface IInterchainTokenService is
-    ITransmitInterchainToken,
     ITokenManagerType,
     ITokenManagerImplementation,
     IAxelarValuedExpressExecutable,

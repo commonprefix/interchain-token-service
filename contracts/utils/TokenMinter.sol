@@ -7,7 +7,7 @@ import { HTS } from '../hedera/HTS.sol';
 
 /**
  * @title TokenMinter Contract
- * @notice Allows custom minters to mint and HTS tokens via ITS. Mintership can be transferred.
+ * @notice Allows custom minters to mint and burn HTS tokens via ITS. Mintership can be transferred.
  * @dev This module is used through inheritance.
  */
 contract TokenMinter is ITokenMinter {
