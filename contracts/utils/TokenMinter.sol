@@ -13,16 +13,19 @@ import { HTS } from '../hedera/HTS.sol';
 contract TokenMinter is ITokenMinter {
     mapping(address => mapping(address => bool)) private tokenMinters;
 
-    // TODO(hedera) switch to modifier
-    // Due to size limitations, a function is used to lower the size of the contract.
-    function onlyTokenMinter(address token) private view {
+    /**
+     * @notice This modifier is used to ensure that only a token minter can call the function.
+     * @param token The address of the token
+     */
+    modifier onlyTokenMinter(address token) {
         if (!tokenMinters[token][msg.sender]) revert MissingMinterPermission();
+        _;
     }
 
     /**
      * @notice Internal function that add a new minter.
      * @param minter The address of the new minter.
-     * @param token the address of the token
+     * @param token The address of the token
      */
     function _addTokenMinter(address token, address minter) internal {
         tokenMinters[token][minter] = true;
@@ -34,8 +37,7 @@ contract TokenMinter is ITokenMinter {
      * @param token The address of the token
      * @param minter The address of the new minter.
      */
-    function transferTokenMintership(address token, address minter) external {
-        onlyTokenMinter(token);
+    function transferTokenMintership(address token, address minter) external onlyTokenMinter(token) {
         delete tokenMinters[token][msg.sender];
         tokenMinters[token][minter] = true;
     }
@@ -58,8 +60,7 @@ contract TokenMinter is ITokenMinter {
      * @param account The address that will receive the minted tokens.
      * @param amount The amount of tokens to mint.
      */
-    function mintToken(address token, address account, uint256 amount) external {
-        onlyTokenMinter(token);
+    function mintToken(address token, address account, uint256 amount) external onlyTokenMinter(token) {
         HTS.mintToken(token, amount);
         HTS.transferToken(token, address(this), account, amount);
     }
@@ -73,8 +74,7 @@ contract TokenMinter is ITokenMinter {
      * @param account The address that will have its tokens burnt.
      * @param amount The amount of tokens to burn.
      */
-    function burnToken(address token, address account, uint256 amount) external {
-        onlyTokenMinter(token);
+    function burnToken(address token, address account, uint256 amount) external onlyTokenMinter(token) {
         HTS.transferFrom(token, account, address(this), amount);
         HTS.burnToken(token, amount);
     }

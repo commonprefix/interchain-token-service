@@ -46,19 +46,6 @@ const compilerSettings = {
     },
 };
 
-const itsCompilerSettings = {
-    ...compilerSettings,
-    settings: {
-        ...compilerSettings.settings,
-        optimizer: {
-            ...optimizerSettings,
-            // TODO(hedera) optimize ITS contract further, and increase the runs value.
-            // Optimize ITS contract to fit into the 24576 bytes limit
-            runs: 1,
-        },
-    },
-};
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -69,7 +56,6 @@ module.exports = {
         overrides: process.env.NO_OVERRIDES
             ? {}
             : {
-                  'contracts/InterchainTokenService.sol': itsCompilerSettings,
                   'contracts/proxies/InterchainProxy.sol': fixedContractCompilerSettings,
                   'contracts/proxies/TokenManagerProxy.sol': fixedContractCompilerSettings,
                   'contracts/interchain-token/InterchainToken.sol': fixedContractCompilerSettings,
