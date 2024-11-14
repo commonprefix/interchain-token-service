@@ -614,7 +614,7 @@ contract InterchainTokenService is
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) external onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
+    ) external payable onlyRemoteService(sourceChain, sourceAddress) whenNotPaused {
         bytes32 payloadHash = keccak256(payload);
 
         if (!gateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash)) {

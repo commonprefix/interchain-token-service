@@ -164,21 +164,21 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _giveInterchainToken(address tokenAddress, address to, uint256 amount) internal {
-	    HTS.mintToken(tokenAddress, amount);
-	    HTS.transferToken(tokenAddress, address(this), to, amount);
+        HTS.mintToken(tokenAddress, amount);
+        HTS.transferToken(tokenAddress, address(this), to, amount);
     }
 
     function _takeInterchainToken(address tokenAddress, address from, uint256 amount) internal {
-	    HTS.transferFrom(tokenAddress, from, address(this), amount);
-	    HTS.burnToken(tokenAddress, amount);
+        HTS.transferFrom(tokenAddress, from, address(this), amount);
+        HTS.burnToken(tokenAddress, amount);
     }
 
     function _mintToken(address tokenManager, address tokenAddress, address to, uint256 amount) internal {
-    	ITokenManager(tokenManager).mintToken(tokenAddress, to, amount);
+        ITokenManager(tokenManager).mintToken(tokenAddress, to, amount);
     }
 
     function _burnToken(address tokenManager, address tokenAddress, address from, uint256 amount) internal {
-    	ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
+        ITokenManager(tokenManager).burnToken(tokenAddress, from, amount);
     }
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {

@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import { IAxelarValuedExpressExecutable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarValuedExpressExecutable.sol';
 import { IMulticall } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IMulticall.sol';
 import { IPausable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IPausable.sol';
 import { IUpgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interfaces/IUpgradable.sol';
 
+import { IAxelarValuedExpressExecutable } from './IAxelarValuedExpressExecutable.sol';
 import { ITokenManager } from './ITokenManager.sol';
 import { ITokenManagerType } from './ITokenManagerType.sol';
 import { ITokenManagerImplementation } from './ITokenManagerImplementation.sol';
