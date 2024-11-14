@@ -919,17 +919,8 @@ contract InterchainTokenService is
         address minter;
         if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
 
-        // TODO(hedera) check if we can prevent redeployment
         (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-            abi.encodeWithSelector(
-                IInterchainTokenDeployer.deployInterchainToken.selector,
-                bytes32(0),
-                tokenId,
-                minter,
-                name,
-                symbol,
-                decimals
-            )
+            abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, tokenId, minter, name, symbol, decimals)
         );
         if (!success) {
             revert InterchainTokenDeploymentFailed(returnData);

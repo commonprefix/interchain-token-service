@@ -24,15 +24,12 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
      * @return tokenAddress Address of the deployed token.
      */
     function deployInterchainToken(
-        bytes32,
         bytes32 tokenId,
         address,
         string calldata name,
         string calldata symbol,
         uint8 decimals
     ) external payable returns (address tokenAddress) {
-        // TODO(hedera) check if we can use salt, to prevent redeployments
-
         // Since ITS uses delegatecall `this` refers to the ITS contract
         address its = address(this);
 
