@@ -17,6 +17,7 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 
 ### ITS-related Notes
 
+- `InterchainTokenService.sol` `execute` is payable, since it needs to pay for the HTS token creation fee. It is assumed that the fee is sent as value. `IAxelarValuedExpressExecutable`, `IAxelarExpressExecutable` and  `IAxelarExecutable` are copied from `@axelar-network/axelar-gmp-sdk-solidity`. All unchanged except for the `execute` method in `IAxelarExecutable` to include the `payable` modifier.
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
 - `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
 - `transmitInterchainTransfer` was removed from `InterchainTokenService.sol` since it's meant to be called from an `InterchainToken` contract, which is not used.
