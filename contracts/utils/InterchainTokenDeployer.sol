@@ -55,9 +55,9 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         tokenKeys[0] = IHederaTokenService.TokenKey({ keyType: HTS.SUPPLY_KEY_BIT, key: supplyKeyITS });
         token.tokenKeys = tokenKeys;
 
-        // Set some default values for the expiry
+        // Set autoRenewPeriod to 0 so the default will be used (see `HTS.createFungibleToken`)
         // NOTE: Expiry is currently disabled on Hedera
-        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(0, its, 8000000);
+        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(0, its, 0);
         token.expiry = expiry;
 
         address createdTokenAddress = HTS.createFungibleToken(token, 0, int32(uint32(decimals)));
