@@ -11,14 +11,14 @@ import { HTS } from '../hedera/HTS.sol';
  * @dev This module is used through inheritance.
  */
 abstract contract TokenMinter is ITokenMinter {
-    mapping(address => mapping(address => bool)) private tokenMinters;
+    mapping(address => address) private tokenMinters;
 
     /**
      * @notice This modifier is used to ensure that only a token minter can call the function.
      * @param token The address of the token
      */
     modifier onlyTokenMinter(address token) {
-        if (!tokenMinters[token][msg.sender]) revert MissingMinterPermission();
+        if (tokenMinters[token] != msg.sender) revert MissingMinterPermission();
         _;
     }
 
@@ -28,7 +28,7 @@ abstract contract TokenMinter is ITokenMinter {
      * @param token The address of the token
      */
     function _addTokenMinter(address token, address minter) internal {
-        tokenMinters[token][minter] = true;
+        tokenMinters[token] = minter;
     }
 
     /**
@@ -38,8 +38,7 @@ abstract contract TokenMinter is ITokenMinter {
      * @param minter The address of the new minter.
      */
     function transferTokenMintership(address token, address minter) external onlyTokenMinter(token) {
-        delete tokenMinters[token][msg.sender];
-        tokenMinters[token][minter] = true;
+        tokenMinters[token] = minter;
     }
 
     /**
@@ -49,7 +48,7 @@ abstract contract TokenMinter is ITokenMinter {
      * @return bool Boolean value representing whether or not the address is a minter.
      */
     function isTokenMinter(address token, address addr) external view returns (bool) {
-        return tokenMinters[token][addr];
+        return tokenMinters[token] == addr;
     }
 
     /**
