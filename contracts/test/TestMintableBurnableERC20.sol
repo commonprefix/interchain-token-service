@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import { ERC20 } from '../interchain-token/ERC20.sol';
+import { ERC20 } from './ERC20.sol';
 import { Minter } from '../utils/Minter.sol';
 import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol';
 
