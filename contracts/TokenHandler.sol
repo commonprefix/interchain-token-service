@@ -11,7 +11,6 @@ import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
-import { IERC20MintableBurnable } from './interfaces/IERC20MintableBurnable.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
 
 import { HTS } from './hedera/HTS.sol';
@@ -67,17 +66,14 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     /**
      * @notice This function takes token from a specified address to the token manager.
      * @param tokenId The tokenId for the token.
-     * @param tokenOnly can only be called from the token.
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
-    function takeToken(bytes32 tokenId, bool tokenOnly, address from, uint256 amount) external payable returns (uint256) {
+    function takeToken(bytes32 tokenId, address from, uint256 amount) external payable returns (uint256) {
         address tokenManager = _create3Address(tokenId);
         (uint256 tokenManagerType, address tokenAddress) = ITokenManagerProxy(tokenManager).getImplementationTypeAndTokenAddress();
-
-        if (tokenOnly && msg.sender != tokenAddress) revert NotToken(msg.sender, tokenAddress);
 
         if (tokenManagerType == uint256(TokenManagerType.NATIVE_INTERCHAIN_TOKEN)) {
             _takeInterchainToken(tokenAddress, from, amount);

@@ -465,7 +465,7 @@ contract InterchainTokenService is
         bytes calldata metadata,
         uint256 gasValue
     ) external payable whenNotPaused {
-        amount = _takeToken(tokenId, msg.sender, amount, false);
+        amount = _takeToken(tokenId, msg.sender, amount);
 
         (IGatewayCaller.MetadataVersion metadataVersion, bytes memory data) = _decodeMetadata(metadata);
 
@@ -490,7 +490,7 @@ contract InterchainTokenService is
     ) external payable whenNotPaused {
         if (data.length == 0) revert EmptyData();
 
-        amount = _takeToken(tokenId, msg.sender, amount, false);
+        amount = _takeToken(tokenId, msg.sender, amount);
 
         _transmitInterchainTransfer(
             tokenId,
@@ -1010,9 +1010,9 @@ contract InterchainTokenService is
     /**
      * @dev Takes token from a sender via the token service. `tokenOnly` indicates if the caller should be restricted to the token only.
      */
-    function _takeToken(bytes32 tokenId, address from, uint256 amount, bool tokenOnly) internal returns (uint256) {
+    function _takeToken(bytes32 tokenId, address from, uint256 amount) internal returns (uint256) {
         (bool success, bytes memory data) = tokenHandler.delegatecall(
-            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, tokenOnly, from, amount)
+            abi.encodeWithSelector(ITokenHandler.takeToken.selector, tokenId, from, amount)
         );
         if (!success) revert TakeTokenFailed(data);
         amount = abi.decode(data, (uint256));

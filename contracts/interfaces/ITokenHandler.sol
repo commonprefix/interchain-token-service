@@ -8,7 +8,6 @@ pragma solidity ^0.8.0;
  */
 interface ITokenHandler {
     error UnsupportedTokenManagerType(uint256 tokenManagerType);
-    error NotToken(address caller, address token);
 
     /**
      * @notice This function gives token to a specified address from the token manager.
@@ -23,13 +22,12 @@ interface ITokenHandler {
     /**
      * @notice This function takes token from a specified address to the token manager.
      * @param tokenId The tokenId for the token.
-     * @param tokenOnly can only be called from the token.
      * @param from The address to take tokens from.
      * @param amount The amount of token to take.
      * @return uint256 The amount of token actually taken, which could be different for certain token type.
      */
     // slither-disable-next-line locked-ether
-    function takeToken(bytes32 tokenId, bool tokenOnly, address from, uint256 amount) external payable returns (uint256);
+    function takeToken(bytes32 tokenId, address from, uint256 amount) external payable returns (uint256);
 
     /**
      * @notice This function transfers token from and to a specified address.
