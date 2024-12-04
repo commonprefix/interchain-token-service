@@ -161,11 +161,12 @@ library HTS {
     /// @param token The token for which to mint tokens. If token does not exist, transaction results in
     ///              INVALID_TOKEN_ID
     /// @param amount Applicable to tokens of type FUNGIBLE_COMMON. The amount to mint to the Treasury Account.
-    ///               Amount must be a positive non-zero number represented in the lowest denomination of the
+    ///               Amount must be a non-negative number represented in the lowest denomination of the
     ///               token. The new supply must be lower than 2^63.
+    ///               Amount can be zero as per [HIP-564](https://hips.hedera.com/hip/hip-564).
     /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
     function mintToken(address token, uint256 amount) public returns (int64 newTotalSupply) {
-        if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
+        if (amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
 
@@ -187,11 +188,12 @@ library HTS {
     /// @param token The token for which to burn tokens. If token does not exist, transaction results in
     ///              INVALID_TOKEN_ID
     /// @param amount  Applicable to tokens of type FUNGIBLE_COMMON. The amount to burn from the Treasury Account.
-    ///                Amount must be a positive non-zero number, not bigger than the token balance of the treasury
-    ///                account (0; balance], represented in the lowest denomination.
+    ///                Amount must be a non-negative number, not bigger than the token balance of the treasury
+    ///                account [0; balance], represented in the lowest denomination.
+    ///                Amount can be zero as per [HIP-564](https://hips.hedera.com/hip/hip-564).
     /// @return newTotalSupply The new supply of tokens. For NFTs it is the total count of NFTs
     function burnToken(address token, uint256 amount) public returns (int64 newTotalSupply) {
-        if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
+        if (amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
         int64 amountInt64 = int64(int256(amount));
