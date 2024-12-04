@@ -11,10 +11,6 @@ import { HTS, IHederaTokenService } from '../hedera/HTS.sol';
  * @notice This contract is used to deploy new instances of the InterchainTokenProxy contract.
  */
 contract InterchainTokenDeployer is IInterchainTokenDeployer {
-    function implementationAddress() public pure returns (address) {
-        return address(0);
-    }
-
     /**
      * @notice Deploys a new instance of the InterchainTokenProxy contract.
      * @param tokenId TokenId for the token.
@@ -63,13 +59,5 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         address createdTokenAddress = HTS.createFungibleToken(token, 0, int32(uint32(decimals)));
 
         tokenAddress = createdTokenAddress;
-    }
-
-    /**
-     * @notice Returns the interchain token deployment address.
-     * @return tokenAddress The token address.
-     */
-    function deployedAddress(bytes32) external pure returns (address tokenAddress) {
-        return address(0);
     }
 }

@@ -14,19 +14,6 @@ interface IInterchainTokenDeployer {
     error TokenDeploymentFailed();
 
     /**
-     * @notice Returns the interchain token implementation address.
-     * @return address The interchain token implementation address.
-     */
-    function implementationAddress() external view returns (address);
-
-    /**
-     * @notice Returns the interchain token deployment address.
-     * @param salt The deployment salt.
-     * @return tokenAddress The token address.
-     */
-    function deployedAddress(bytes32 salt) external view returns (address tokenAddress);
-
-    /**
      * @notice Deploys a new instance of the InterchainTokenProxy contract.
      * @param tokenId tokenId of the token.
      * @param name Name of the token.
