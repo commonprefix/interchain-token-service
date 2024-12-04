@@ -8,7 +8,6 @@ import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
-import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
 
 import { HTS, IHederaTokenService } from './hedera/HTS.sol';
@@ -358,14 +357,6 @@ contract InterchainTokenFactory is IInterchainTokenFactory, ITokenManagerType, M
      */
     function registerCanonicalInterchainToken(address tokenAddress) external payable returns (bytes32 tokenId) {
         bytes memory params = abi.encode('', tokenAddress);
-
-        bool isHTSToken = HTS.isToken(tokenAddress);
-        if (isHTSToken) {
-            // Check if token is supported
-            if (!HTS.isTokenSupportedByITS(tokenAddress)) {
-                revert HTS.TokenUnsupported();
-            }
-        }
 
         bytes32 salt = canonicalInterchainTokenSalt(chainNameHash, tokenAddress);
 
