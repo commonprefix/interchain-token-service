@@ -25,7 +25,6 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
      */
     function deployInterchainToken(
         bytes32 tokenId,
-        address,
         string calldata name,
         string calldata symbol,
         uint8 decimals

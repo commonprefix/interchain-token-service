@@ -920,7 +920,7 @@ contract InterchainTokenService is
         if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
 
         (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-            abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, tokenId, minter, name, symbol, decimals)
+            abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, tokenId, name, symbol, decimals)
         );
         if (!success) {
             revert InterchainTokenDeploymentFailed(returnData);
