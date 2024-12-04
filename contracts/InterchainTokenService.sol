@@ -935,7 +935,7 @@ contract InterchainTokenService is
          * If `address(0)` was provided, add it as a minter to allow
          * anyone to easily check that no custom minter was set.
          */
-        _addTokenMinter(tokenAddress, minter);
+        _setTokenMinter(tokenAddress, minter);
 
         // slither-disable-next-line reentrancy-events
         emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);

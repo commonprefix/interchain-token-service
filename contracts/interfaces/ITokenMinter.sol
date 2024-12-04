@@ -4,10 +4,12 @@ pragma solidity ^0.8.0;
 
 /**
  * @title ITokenMinter Interface
- * @notice
+ * @notice A token can have a single minter.
  */
 interface ITokenMinter {
     error MissingMinterPermission();
+
+    event TokenMinterSet(address indexed tokenAddress, address indexed minter);
 
     /**
      * @notice Change the minter of the contract.

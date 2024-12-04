@@ -27,8 +27,9 @@ abstract contract TokenMinter is ITokenMinter {
      * @param minter The address of the new minter.
      * @param token The address of the token
      */
-    function _addTokenMinter(address token, address minter) internal {
+    function _setTokenMinter(address token, address minter) internal {
         tokenMinters[token] = minter;
+        emit TokenMinterSet(token, minter);
     }
 
     /**
@@ -38,7 +39,7 @@ abstract contract TokenMinter is ITokenMinter {
      * @param minter The address of the new minter.
      */
     function transferTokenMintership(address token, address minter) external onlyTokenMinter(token) {
-        tokenMinters[token] = minter;
+        _setTokenMinter(token, minter);
     }
 
     /**
