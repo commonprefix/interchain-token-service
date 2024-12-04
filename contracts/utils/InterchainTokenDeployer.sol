@@ -38,7 +38,6 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         token.treasury = its;
 
         // Set the token service as a minter to allow it to mint and burn tokens.
-        // Also add the provided address as a minter, if set.
         IHederaTokenService.TokenKey[] memory tokenKeys = new IHederaTokenService.TokenKey[](1);
         // Define the supply keys - minter
         IHederaTokenService.KeyValue memory supplyKeyITS = IHederaTokenService.KeyValue({
