@@ -7,12 +7,13 @@ import { IImplementation } from '@axelar-network/axelar-gmp-sdk-solidity/contrac
 import { IBaseTokenManager } from './IBaseTokenManager.sol';
 import { IOperator } from './IOperator.sol';
 import { IFlowLimit } from './IFlowLimit.sol';
+import { ITokenManagerType } from './ITokenManagerType.sol';
 
 /**
  * @title ITokenManager Interface
  * @notice This contract is responsible for managing tokens, such as setting locking token balances, or setting flow limits, for interchain transfers.
  */
-interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementation {
+interface ITokenManager is IBaseTokenManager, ITokenManagerType, IOperator, IFlowLimit, IImplementation {
     error TokenLinkerZeroAddress();
     error NotService(address caller);
     error TakeTokenFailed();
@@ -28,6 +29,14 @@ interface ITokenManager is IBaseTokenManager, IOperator, IFlowLimit, IImplementa
      * @return uint256 The implementation type of this token manager.
      */
     function implementationType() external view returns (uint256);
+
+    /**
+     * @notice Reverts if the token manager type is not supported for a given token address.
+     * @param tokenAddress_ The address of the token.
+     * @param implementationType_ The implementation type to check.
+     * @dev If the token is an HTS token, the Token Manager will associate itself with the token.
+     */
+    function ensureSupported(address tokenAddress_, uint256 implementationType_) external;
 
     function addFlowIn(uint256 amount) external;
 

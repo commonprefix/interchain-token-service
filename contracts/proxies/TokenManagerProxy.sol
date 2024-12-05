@@ -6,6 +6,7 @@ import { IProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/interf
 import { BaseProxy } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/upgradable/BaseProxy.sol';
 
 import { IBaseTokenManager } from '../interfaces/IBaseTokenManager.sol';
+import { ITokenManager } from '../interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from '../interfaces/ITokenManagerProxy.sol';
 import { ITokenManagerImplementation } from '../interfaces/ITokenManagerImplementation.sol';
 
@@ -43,6 +44,8 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
         if (!success) revert SetupFailed();
 
         tokenAddress = IBaseTokenManager(implementation_).getTokenAddressFromParams(params);
+
+        ITokenManager(implementation_).ensureSupported(tokenAddress, implementationType_);
     }
 
     /**

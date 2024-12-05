@@ -86,6 +86,34 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
     }
 
     /**
+     * @notice Reverts if the token manager type is not supported, or if the token is not supported.
+     * If the token is a supported HTS token, the Token Manager will associate itself with the token.
+     * @param tokenAddress_ The address of the token to check.
+     * @param implementationType_ The implementation type to check.
+     * @dev It's cheaper to check both the token and the implementation type in one function.
+     */
+    function ensureSupported(address tokenAddress_, uint256 implementationType_) external {
+        bool isHTSToken = HTS.isToken(tokenAddress_);
+        if (isHTSToken) {
+            // Currently MINT_BURN and MINT_BURN_FROM are not supported for HTS tokens
+            // See contracts/hedera/README.md for more information
+            if (
+                implementationType_ == uint256(TokenManagerType.MINT_BURN) ||
+                implementationType_ == uint256(TokenManagerType.MINT_BURN_FROM)
+            ) {
+                revert NotSupported();
+            }
+
+            // Check if token is supported
+            if (!HTS.isTokenSupportedByITS(tokenAddress_)) {
+                revert HTS.TokenUnsupported();
+            }
+            // Associate the token manager with the token
+            HTS.associateToken(address(this), tokenAddress_);
+        }
+    }
+
+    /**
      * @notice A function that should return the token address from the setup params.
      * @param params_ The setup parameters.
      * @return tokenAddress_ The token address.
@@ -115,18 +143,6 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
         _addAccountRoles(operator, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
         // Add operator and flow limiter role to the service. The operator can remove the flow limiter role if they so chose and the service has no way to use the operator role for now.
         _addAccountRoles(interchainTokenService, (1 << uint8(Roles.FLOW_LIMITER)) | (1 << uint8(Roles.OPERATOR)));
-
-        address tokenAddress_ = getTokenAddressFromParams(params_);
-
-        bool isHTSToken = HTS.isToken(tokenAddress_);
-        if (isHTSToken) {
-            // Check if token is supported
-            if (!HTS.isTokenSupportedByITS(tokenAddress_)) {
-                revert HTS.TokenUnsupported();
-            }
-            // Associate the token manager with the token
-            HTS.associateToken(address(this), tokenAddress_);
-        }
     }
 
     function addFlowIn(uint256 amount) external onlyService {

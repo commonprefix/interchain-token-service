@@ -28,3 +28,4 @@ ITS contracts in this repo are modified to support Hedera Token Service. All new
 - Both HTS tokens and ERC20 tokens are supported for registration.
 - When registering a canonical token, only the `TokenManager` is associated with the token.
 - `TokenHandler`'s `_giveInterchainToken` and `_takeInterchainToken` interact with the HTS directly — it is assumed the methods are called by the `InterchainTokenService` contract. `TokenManager` is still used for ERC20 tokens, lock-unlock and flow limits.
+- `MINT_BURN` and `MINT_BURN_FROM` Token Manager types are currently unsupported, due to missing support of transferring the Treasury role. If this gets supported in the future, the `TokenManager` can be upgraded.
