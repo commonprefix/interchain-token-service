@@ -178,11 +178,6 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
     }
 
     function _burnTokenFrom(address tokenAddress, address from, uint256 amount) internal {
-        if (HTS.isToken(tokenAddress)) {
-            HTS.transferFrom(tokenAddress, from, address(this), amount);
-            HTS.burnToken(tokenAddress, amount);
-        } else {
-            IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
-        }
+        IERC20(tokenAddress).safeCall(abi.encodeWithSelector(IERC20BurnableFrom.burnFrom.selector, from, amount));
     }
 }
