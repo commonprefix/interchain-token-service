@@ -119,7 +119,7 @@ library HTS {
     /// @param receiver The receiver of the transaction
     /// @param amount Non-negative value to send. a negative value will result in a failure.
     function transferToken(address token, address sender, address receiver, uint256 amount) public {
-        if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
+        if (amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
         if (sender == address(0) || receiver == address(0)) revert InvalidAccount();
@@ -142,7 +142,7 @@ library HTS {
     /// @param to The account address of the receiver of the `amount` tokens
     /// @param amount The amount of tokens to transfer from `from` to `to`
     function transferFrom(address token, address from, address to, uint256 amount) public {
-        if (amount <= 0 || amount > uint256(int256(type(int64).max))) {
+        if (amount > uint256(int256(type(int64).max))) {
             revert InvalidAmount();
         }
         if (from == address(0) || to == address(0)) revert InvalidAccount();
