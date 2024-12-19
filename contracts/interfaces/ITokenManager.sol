@@ -23,6 +23,7 @@ interface ITokenManager is IBaseTokenManager, ITokenManagerType, IOperator, IFlo
     error AlreadyFlowLimiter(address flowLimiter);
     error NotFlowLimiter(address flowLimiter);
     error NotSupported();
+    error ManagerTypeNotSupported();
 
     /**
      * @notice Returns implementation type of this token manager.

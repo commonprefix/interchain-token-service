@@ -101,13 +101,14 @@ contract TokenManager is ITokenManager, Operator, FlowLimit, Implementation, Mul
                 implementationType_ == uint256(TokenManagerType.MINT_BURN) ||
                 implementationType_ == uint256(TokenManagerType.MINT_BURN_FROM)
             ) {
-                revert NotSupported();
+                revert ManagerTypeNotSupported();
             }
 
             // Check if token is supported
             if (!HTS.isTokenSupportedByITS(tokenAddress_)) {
                 revert HTS.TokenUnsupported();
             }
+
             // Associate the token manager with the token
             HTS.associateToken(address(this), tokenAddress_);
         }

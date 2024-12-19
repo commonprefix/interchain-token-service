@@ -45,7 +45,11 @@ contract TokenManagerProxy is BaseProxy, ITokenManagerProxy {
 
         tokenAddress = IBaseTokenManager(implementation_).getTokenAddressFromParams(params);
 
-        ITokenManager(implementation_).ensureSupported(tokenAddress, implementationType_);
+        bytes memory returnData;
+        (success, returnData) = implementation_.delegatecall(
+            abi.encodeWithSelector(ITokenManager.ensureSupported.selector, tokenAddress, implementationType_)
+        );
+        if (!success) revert NotSupported(returnData);
     }
 
     /**
