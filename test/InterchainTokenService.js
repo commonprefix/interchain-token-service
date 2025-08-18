@@ -137,7 +137,7 @@ describe('Interchain Token Service', () => {
 
         const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
         const tmTokenAddress = await tokenManager.tokenAddress();
-        expect(tmTokenAddress.toLowerCase()).to.equal(token.address);
+        expect(tmTokenAddress.toLowerCase()).to.equal(token.address.toLowerCase());
         expect(await tokenManager.hasRole(wallet.address, OPERATOR_ROLE)).to.be.true;
 
         if (mintAmount > 0) {
@@ -880,7 +880,7 @@ describe('Interchain Token Service', () => {
 
             await expect(reportGas(service.registerTokenMetadata(tokenAddress, gasValue), 'registerTokenMetadata'))
                 .to.emit(service, 'TokenMetadataRegistered')
-                .withArgs(tokenAddress, decimals)
+                .withArgs(tokenAddress.toLowerCase(), decimals)
                 .to.emit(gateway, 'ContractCall')
                 .withArgs(service.address, ITS_HUB_CHAIN, ITS_HUB_ADDRESS, payloadHash, payload);
         });

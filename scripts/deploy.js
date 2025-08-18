@@ -22,6 +22,7 @@ const HTS_DEPENDENT_CONTRACTS = [
     'TokenManager',
     // Test
     'TestInterchainTokenService',
+    'TestTokenCreationPricing',
     'TestInterchainTokenDeployer',
     'TestTokenManager',
 ];

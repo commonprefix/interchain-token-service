@@ -36,8 +36,12 @@ const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 
 const { createHtsToken } = require('../scripts/create-hts-token.js');
 const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
+const { fundWithWHBAR } = require('../scripts/deploy-whbar');
 
 const reportGas = gasReporter('Interchain Token Factory');
+
+// Amount of WHBAR to fund self for deployments via the factory
+const SELF_FUND_AMOUNT_WHBAR = '200';
 
 describe('InterchainTokenFactory', () => {
     let wallet, otherWallet;
@@ -55,9 +59,17 @@ describe('InterchainTokenFactory', () => {
         hederaPk = hederaClientInfo.hederaPk;
     });
 
+    let whbar;
     before(async () => {
         [wallet, otherWallet] = await ethers.getSigners();
-        ({ service, gateway, gasService, tokenFactory } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, [destinationChain]));
+        ({ service, gateway, gasService, tokenFactory, whbar } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, [destinationChain]));
+
+        // Fund self with 200 WHBAR
+        console.log(`Funding ${wallet.address} with ${SELF_FUND_AMOUNT_WHBAR} WHBAR for factory deployments...`);
+        await fundWithWHBAR(whbar, wallet.address, ethers.utils.parseEther(SELF_FUND_AMOUNT_WHBAR), wallet);
+
+        // Approve the factory to spend WHBAR
+        await whbar.connect(wallet).approve(tokenFactory.address, ethers.constants.MaxUint256);
     });
 
     describe('Token Factory Deployment', async () => {

@@ -42,6 +42,7 @@ const {
 const { createHtsToken } = require('../scripts/create-hts-token.js');
 const { evmAddressToTokenId, associateToken } = require('../scripts/token-associate.js');
 const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
+const { fundWithWHBAR } = require('../scripts/deploy-whbar.js');
 
 describe('Interchain Token Service Full Flow', () => {
     let wallet;
@@ -60,6 +61,7 @@ describe('Interchain Token Service Full Flow', () => {
         hederaId = hederaClientInfo.hederaOperatorId;
     });
 
+    let whbar;
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
@@ -67,7 +69,11 @@ describe('Interchain Token Service Full Flow', () => {
         const wallet1Balance = await wallet.getBalance();
         console.log(`\tWallet ${wallet.address} with ${ethers.utils.formatEther(wallet1Balance)} HBAR`);
 
-        ({ service, gateway, gasService, tokenFactory } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, otherChains));
+        ({ service, gateway, gasService, tokenFactory, whbar } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, otherChains));
+
+        await fundWithWHBAR(whbar, wallet.address, ethers.utils.parseEther('100'), wallet);
+        // Approve the factory to spend wallet's WHBAR
+        await whbar.connect(wallet).approve(tokenFactory.address, ethers.constants.MaxUint256);
     });
 
     /**

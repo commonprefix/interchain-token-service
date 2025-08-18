@@ -13,6 +13,7 @@ import { IERC20Named } from './interfaces/IERC20Named.sol';
 import { IMinter } from './interfaces/IMinter.sol';
 
 import { HTS, IHederaTokenService } from './hedera/HTS.sol';
+import { IWHBAR } from './hedera/IWHBAR.sol';
 
 /**
  * @title InterchainTokenFactory
@@ -141,8 +142,7 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         uint256 initialSupply,
         address minter
     ) external payable returns (bytes32 tokenId) {
-        address sender = msg.sender;
-        bytes32 deploySalt = interchainTokenDeploySalt(sender, salt);
+        bytes32 deploySalt = interchainTokenDeploySalt(msg.sender, salt);
         bytes memory minterBytes = new bytes(0);
         string memory currentChain = '';
         uint256 gasValue = 0;
@@ -161,6 +161,11 @@ contract InterchainTokenFactory is IInterchainTokenFactory, Multicall, Upgradabl
         } else {
             revert ZeroSupplyToken();
         }
+
+        // Ensure that the deployer (sender) approved ITF to transfer WHBAR on its behalf
+        // WHBAR is transferred to pay for token creation
+        uint256 price = interchainTokenService.tokenCreationPriceTinybars();
+        IWHBAR(interchainTokenService.whbarAddress()).transferFrom(msg.sender, address(interchainTokenService), price);
 
         tokenId = _deployInterchainToken(deploySalt, currentChain, name, symbol, decimals, minterBytes, gasValue);
     }

@@ -20,6 +20,7 @@ const {
 const { create3DeployContract } = require('@axelar-network/axelar-gmp-sdk-solidity');
 const Token = getContractJSON('TestInterchainTokenStandard');
 const { NATIVE_INTERCHAIN_TOKEN, ITS_HUB_ADDRESS, ITS_HUB_CHAIN } = require('./constants');
+const { fundWithWHBAR } = require('../scripts/deploy-whbar.js');
 
 if (isHardhat) {
     describe('Token Address Derivation [ @skip-on-coverage ]', () => {
@@ -36,11 +37,12 @@ if (isHardhat) {
         const tokenSymbol = 'TN';
         const tokenDecimals = 18;
 
+        let whbar;
         before(async () => {
             const wallets = await ethers.getSigners();
             wallet = wallets[0];
 
-            ({ service, gateway, tokenFactory, create3Deployer } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [
+            ({ service, gateway, tokenFactory, create3Deployer, whbar } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [
                 sourceChain,
                 destinationChain,
             ]));
@@ -112,6 +114,11 @@ if (isHardhat) {
                 const expectedTokenManagerAddress = '0xcb7DEA0Aeb34A992451717C0537b5C4eA1635A54';
 
                 const params = defaultAbiCoder.encode(['bytes', 'address'], [tokenFactory.address, expectedTokenAddress]);
+
+                // Fund the user that will deploy the token
+                await fundWithWHBAR(whbar, wallet.address, ethers.utils.parseEther('10'), wallet);
+                // Approve the factory to spend WHBAR
+                await whbar.connect(wallet).approve(tokenFactory.address, ethers.constants.MaxUint256);
 
                 await expect(tokenFactory.deployInterchainToken(salt, tokenName, tokenSymbol, tokenDecimals, initialSupply, wallet.address))
                     .to.emit(service, 'InterchainTokenDeployed')

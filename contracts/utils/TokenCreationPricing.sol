@@ -24,6 +24,10 @@ contract TokenCreationPricing is ITokenCreationPricing {
         _tokenCreationPricingStorage().whbarAddress = whbarAddress_;
     }
 
+    /**
+     * @notice Returns the token creation price in tinycents
+     * @return price The token creation price in tinycents
+     */
     function tokenCreationPrice() public view returns (uint256 price) {
         price = _tokenCreationPricingStorage().tokenCreationPrice;
     }
@@ -32,7 +36,7 @@ contract TokenCreationPricing is ITokenCreationPricing {
      * @notice Returns the token creation price in tinybars.
      * @return price The token creation price in tinybars.
      */
-    function _tokenCreationPriceTinybars() internal returns (uint256 price) {
+    function tokenCreationPriceTinybars() public returns (uint256 price) {
         uint256 priceTinycents = _tokenCreationPricingStorage().tokenCreationPrice;
 
         // Add 1 tinybar to ensure we meet the minimum value after rounding from

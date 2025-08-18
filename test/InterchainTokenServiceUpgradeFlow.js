@@ -23,7 +23,7 @@ const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
 const { ITS_HUB_ADDRESS, LOCK_UNLOCK } = require('./constants');
 
-describe.only('Interchain Token Service Upgrade Flow', () => {
+describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, operator;
     let service, gateway, gasService, tokenFactory;
     let tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler;

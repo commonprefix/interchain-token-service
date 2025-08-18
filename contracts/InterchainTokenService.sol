@@ -959,7 +959,7 @@ contract InterchainTokenService is
         if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
 
         // Price in tinybars
-        uint256 tokenCreatePrice = _tokenCreationPriceTinybars();
+        uint256 tokenCreatePrice = tokenCreationPriceTinybars();
 
         // TokenManagerProxy deploy params
         bytes memory params = abi.encode(operator, name, symbol, decimals, tokenCreatePrice);

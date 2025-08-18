@@ -8,7 +8,13 @@ New HTS Interchain Tokens will have their Token Manager as the sole Supply Key (
 
 Since the `createFungibleToken` precompile in Hedera requires a fee to be sent as value, an `WHBAR` contract (`WETH` equivalent) is used to hold the HBAR used for token creation. `InterchainTokenService` transfers certain amount of `WHBAR` to the newly deploying `TokenManagerProxy` contract. The `TokenManagerProxy` contract, during constructor, withdraws HBAR from `WHBAR`, and sends it to `InterchainTokenDeployer`, which finally uses it to pay for the token creation.
 
-The responsibility of keeping ITS funded on the WHBAR contract lies with the deployer, it is assumed that a top-up mechanism is in place to ensure the contract has enough WHBAR to create new tokens.
+For local deployments, the deploying user must ensure it has enough balance in the `WHBAR` contract and appropriate allowance to the `InterchainTokenFactory` contract, which will transfer the `WHBAR` to the `InterchainTokenService` contract.
+
+For remote deployments, the balance of `InterchainTokenService` is used. The responsibility of keeping ITS funded on the `WHBAR` contract lies with the contract deployer (Axelar), it is assumed that a top-up mechanism is in place to ensure the contract has enough WHBAR to create new tokens.
+
+> _Why not send coins directly to the `InterchainTokenService` contract?_
+>
+> We don't want to change the relayer to send value directly to the `execute` method of the `InterchainTokenService` contract. Users _could_ send value directly via the factory, however to simplify the ITS contract the same WHBAR procedure is used, thus making it consistent regardless of whether the deployment is local or remote.
 
 ![Deploy New Interchain Token Flow](./diagrams/deploy_interchain_token.png)
 

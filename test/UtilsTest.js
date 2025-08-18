@@ -323,12 +323,12 @@ describe('Create3Deployer', () => {
 
             const bytecode = tokenFactory.getDeployTransaction(name, symbol, decimals).data;
 
-            await expect(deployer.deploy(bytecode, salt, { value: 10 }))
-                .to.emit(deployer, 'Deployed')
-                .withArgs(address);
+            const value = 10 * 10 ** 10; // 10 tinybars
+
+            await expect(deployer.deploy(bytecode, salt, { value })).to.emit(deployer, 'Deployed').withArgs(address);
 
             expect(await ethers.provider.getBalance(address)).to.equal(0);
-            expect(await ethers.provider.getBalance(deployer.address)).to.equal(10);
+            expect(await ethers.provider.getBalance(deployer.address)).to.equal(value);
         });
     });
 });
