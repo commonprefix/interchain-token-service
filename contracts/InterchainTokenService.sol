@@ -15,12 +15,10 @@ import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidit
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
-import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
-import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
 import { ChainTracker } from './utils/ChainTracker.sol';
@@ -133,8 +131,9 @@ contract InterchainTokenService is
         string memory chainName_,
         string memory itsHubAddress_,
         address tokenManagerImplementation_,
-        address tokenHandler_
-    ) ItsHubAddressTracker(itsHubAddress_) {
+        address tokenHandler_,
+        address whbarAddress_
+    ) ItsHubAddressTracker(itsHubAddress_) TokenCreationPricing(whbarAddress_) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
@@ -610,14 +609,6 @@ contract InterchainTokenService is
     }
 
     /**
-     * @notice Used to set the WHBAR contract address.
-     * @param whbarAddress_ The new WHBAR contract address.
-     */
-    function setWhbarAddress(address whbarAddress_) external onlyOperatorOrOwner {
-        _setWhbarAddress(whbarAddress_);
-    }
-
-    /**
      * @notice Allows the owner to pause/unpause the token service.
      * @param paused Boolean value representing whether to pause or unpause.
      */
@@ -970,7 +961,7 @@ contract InterchainTokenService is
         address tokenManager_ = tokenManagerAddress(tokenId);
 
         // Approve the token manager deployer to spend the token creation price
-        IWHBAR(whbarAddress()).approve(tokenManager_, tokenCreatePrice);
+        IWHBAR(whbarAddress).approve(tokenManager_, tokenCreatePrice);
 
         (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
             abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)

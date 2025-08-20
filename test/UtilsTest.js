@@ -4,12 +4,11 @@ const chai = require('chai');
 const { ethers } = require('hardhat');
 const {
     Wallet,
-    getContractAt,
     constants: { AddressZero },
 } = ethers;
 const { expect } = chai;
 const { getRandomBytes32, expectRevert, expectNonZeroAddress } = require('./utils');
-const { deployContract, deployAll } = require('../scripts/deploy');
+const { deployContract } = require('../scripts/deploy');
 
 let ownerWallet, otherWallet;
 

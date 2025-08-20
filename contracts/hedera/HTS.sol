@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// solhint-disable
 pragma solidity ^0.8.0;
 
 import { HederaResponseCodes } from './HederaResponseCodes.sol';

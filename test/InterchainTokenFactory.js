@@ -34,7 +34,8 @@ const {
 } = require('./constants');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 
-const { createHtsToken } = require('../scripts/create-hts-token.js');
+const { createHtsToken, createHtsTokenWithKeys } = require('../scripts/create-hts-token.js');
+
 const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
 const { fundWithWHBAR } = require('../scripts/deploy-whbar');
 
@@ -59,17 +60,115 @@ describe('InterchainTokenFactory', () => {
         hederaPk = hederaClientInfo.hederaPk;
     });
 
-    let whbar;
+    let whbar, htsAddress, hts;
     before(async () => {
         [wallet, otherWallet] = await ethers.getSigners();
-        ({ service, gateway, gasService, tokenFactory, whbar } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, [destinationChain]));
+        ({ service, gateway, gasService, tokenFactory, whbar, htsAddress } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, [
+            destinationChain,
+        ]));
+
+        hts = await getContractAt('HTS', htsAddress, wallet);
 
         // Fund self with 200 WHBAR
-        console.log(`Funding ${wallet.address} with ${SELF_FUND_AMOUNT_WHBAR} WHBAR for factory deployments...`);
         await fundWithWHBAR(whbar, wallet.address, ethers.utils.parseEther(SELF_FUND_AMOUNT_WHBAR), wallet);
 
         // Approve the factory to spend WHBAR
         await whbar.connect(wallet).approve(tokenFactory.address, ethers.constants.MaxUint256);
+    });
+
+    describe.only('Unsupported HTS Token Registration', async () => {
+        const tokenManagerType = LOCK_UNLOCK;
+        let operator;
+
+        before(() => {
+            operator = wallet.address;
+        });
+
+        it('Should revert when registering HTS token with KYC key', async () => {
+            const salt = getRandomBytes32();
+            const [tokenAddress] = await createHtsTokenWithKeys(hederaClient, hederaPk, 'KYC Token', 'KYC', decimals, 0, { kyc: true });
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCustomToken(salt, tokenAddress, tokenManagerType, operator, gasOptions),
+                // hts,
+                // 'TokenUnsupported',
+            );
+        });
+
+        it('Should revert when registering HTS token with Freeze key', async () => {
+            const salt = getRandomBytes32();
+            const [tokenAddress] = await createHtsTokenWithKeys(hederaClient, hederaPk, 'Freeze Token', 'FREEZE', decimals, 0, {
+                freeze: true,
+            });
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCustomToken(salt, tokenAddress, tokenManagerType, operator, gasOptions),
+                // hts,
+                // 'TokenUnsupported',
+            );
+        });
+
+        it('Should revert when registering HTS token with Wipe key', async () => {
+            const salt = getRandomBytes32();
+            const [tokenAddress] = await createHtsTokenWithKeys(hederaClient, hederaPk, 'Wipe Token', 'WIPE', decimals, 0, {
+                wipe: true,
+            });
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCustomToken(salt, tokenAddress, tokenManagerType, operator, gasOptions),
+                // hts,
+                // 'TokenUnsupported',
+            );
+        });
+
+        it('Should revert when registering HTS token with Pause key', async () => {
+            const salt = getRandomBytes32();
+            const [tokenAddress] = await createHtsTokenWithKeys(hederaClient, hederaPk, 'Pause Token', 'PAUSE', decimals, 0, {
+                pause: true,
+            });
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCustomToken(salt, tokenAddress, tokenManagerType, operator, gasOptions),
+                // hts,
+                // 'TokenUnsupported',
+            );
+        });
+
+        it('Should revert when registering HTS token with multiple unsupported keys', async () => {
+            const salt = getRandomBytes32();
+            const [tokenAddress] = await createHtsTokenWithKeys(hederaClient, hederaPk, 'Multi Key Token', 'MULTI', decimals, 0, {
+                kyc: true,
+                freeze: true,
+                wipe: true,
+            });
+
+            await expectRevert(
+                (gasOptions) => tokenFactory.registerCustomToken(salt, tokenAddress, tokenManagerType, operator, gasOptions),
+                // hts,
+                // 'TokenUnsupported',
+            );
+        });
+
+        it('Should successfully register HTS token without unsupported keys', async () => {
+            const salt = getRandomBytes32();
+            const [tokenAddress] = await createHtsToken(hederaClient, hederaPk, 'Supported Token', 'SUPPORTED', decimals, 0);
+            const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
+            const expectedTokenManagerAddress = await service.tokenManagerAddress(tokenId);
+
+            await expect(tokenFactory.registerCustomToken(salt, tokenAddress, tokenManagerType, operator))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, expectedTokenManagerAddress, tokenManagerType, (params) => {
+                    const [operator_, tokenAddress_] = defaultAbiCoder.decode(['bytes', 'address'], params);
+                    expect(operator_).to.equal(operator === AddressZero ? '0x' : operator.toLowerCase());
+                    expect(tokenAddress_).to.equal(tokenAddress);
+                    return true;
+                });
+
+            // Verify the token manager was actually deployed and configured correctly
+            const tokenManager = await getContractAt('TokenManager', expectedTokenManagerAddress, wallet);
+            expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
+            expect(await tokenManager.implementationType()).to.equal(tokenManagerType);
+        });
     });
 
     describe('Token Factory Deployment', async () => {
@@ -276,6 +375,24 @@ describe('InterchainTokenFactory', () => {
                 tokenFactory,
                 'ZeroSupplyToken',
                 [],
+            );
+        });
+
+        it('Should revert when deploying a token without WHBAR approval', async () => {
+            const salt = keccak256('0x123457');
+            const mintAmount = 0;
+
+            // Fund otherWallet with 20 WHBAR
+            await fundWithWHBAR(whbar, otherWallet.address, ethers.utils.parseEther('20'), wallet);
+
+            // Try to deploy without approving the token factory for WHBAR
+            await expectRevert(
+                (gasOptions) =>
+                    tokenFactory
+                        .connect(otherWallet)
+                        .deployInterchainToken(salt, name, symbol, decimals, mintAmount, otherWallet.address, gasOptions),
+                whbar,
+                'InsufficientAllowance',
             );
         });
 

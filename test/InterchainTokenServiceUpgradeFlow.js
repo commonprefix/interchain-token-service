@@ -18,6 +18,7 @@ const {
     deployInterchainTokenService,
     deployInterchainTokenFactory,
 } = require('../scripts/deploy');
+const { deployWHBAR } = require('../scripts/deploy-whbar.js');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
@@ -56,6 +57,13 @@ describe('Interchain Token Service Upgrade Flow', () => {
             .to.emit(service, 'TokenManagerDeployed')
             .withArgs(tokenId, tokenManager.address, LOCK_UNLOCK, params);
     }
+
+    let whbar;
+    before(async () => {
+        [wallet, otherWallet] = await ethers.getSigners();
+
+        whbar = await deployWHBAR(wallet);
+    });
 
     before(async () => {
         [wallet, otherWallet, operator] = await ethers.getSigners();
@@ -100,6 +108,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             [],
             deploymentKey,
             wallet.address,
+            wallet.address,
+            whbar.address,
         );
 
         tokenFactory = await deployInterchainTokenFactory(wallet, create3Deployer.address, service.address, deploymentKey + 'Factory');

@@ -12,7 +12,6 @@ import { ITokenManagerType } from './interfaces/ITokenManagerType.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { ITokenManagerProxy } from './interfaces/ITokenManagerProxy.sol';
 import { IERC20BurnableFrom } from './interfaces/IERC20BurnableFrom.sol';
-import { IMinter } from './interfaces/IMinter.sol';
 
 /**
  * @title TokenHandler

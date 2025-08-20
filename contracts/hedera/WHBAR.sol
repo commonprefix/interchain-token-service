@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// solhint-disable
 pragma solidity ^0.8.0;
 
 // Copied from https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/wrapped-tokens/WHBAR.sol

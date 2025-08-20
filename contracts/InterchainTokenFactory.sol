@@ -8,9 +8,7 @@ import { Upgradable } from '@axelar-network/axelar-gmp-sdk-solidity/contracts/up
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { IInterchainTokenFactory } from './interfaces/IInterchainTokenFactory.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
-import { IInterchainToken } from './interfaces/IInterchainToken.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
-import { IMinter } from './interfaces/IMinter.sol';
 
 import { HTS, IHederaTokenService } from './hedera/HTS.sol';
 import { IWHBAR } from './hedera/IWHBAR.sol';

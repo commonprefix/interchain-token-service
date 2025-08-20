@@ -3,8 +3,6 @@ const {
     Contract,
     utils: { defaultAbiCoder },
 } = ethers;
-const fs = require('fs');
-const path = require('path');
 const Proxy = require('../artifacts/contracts/proxies/InterchainProxy.sol/InterchainProxy.json');
 const Create3Deployer = require('@axelar-network/axelar-gmp-sdk-solidity/artifacts/contracts/deploy/Create3Deployer.sol/Create3Deployer.json');
 const { create3DeployContract, getCreate3Address } = require('@axelar-network/axelar-gmp-sdk-solidity');
@@ -13,6 +11,8 @@ const { deployHTS } = require('./deploy-hts');
 const { deployWHBAR, fundWithWHBAR } = require('./deploy-whbar');
 
 const HTS_LIBRARY_NAME = 'contracts/hedera/HTS.sol:HTS';
+// $1 = 100 cents = 100 * 10^8 tinycents
+const DEFAULT_TOKEN_CREATION_PRICE = 100 * 10 ** 8;
 
 // List of contracts that depend on HTS library
 const HTS_DEPENDENT_CONTRACTS = [
@@ -83,6 +83,8 @@ async function deployInterchainTokenService(
     deploymentKey,
     ownerAddress = wallet.address,
     operatorAddress = wallet.address,
+    whbarAddress,
+    tokenCreationPrice = DEFAULT_TOKEN_CREATION_PRICE,
 ) {
     const implementation = await deployContract(
         wallet,
@@ -97,13 +99,14 @@ async function deployInterchainTokenService(
             itsHubAddress,
             tokenManagerAddress,
             tokenHandlerAddress,
+            whbarAddress,
         ],
         true,
     );
     const proxy = await create3DeployContract(create3DeployerAddress, wallet, Proxy, deploymentKey, [
         implementation.address,
         ownerAddress,
-        defaultAbiCoder.encode(['address', 'string', 'string[]'], [operatorAddress, chainName, evmChains]),
+        defaultAbiCoder.encode(['address', 'string', 'string[]', 'uint256'], [operatorAddress, chainName, evmChains, tokenCreationPrice]),
     ]);
 
     const service = new Contract(proxy.address, implementation.interface, wallet);
@@ -178,21 +181,10 @@ async function deployAll(
         itsHubAddress,
         evmChains,
         deploymentKey,
+        wallet.address,
+        wallet.address,
+        whbar.address,
     );
-
-    // Set WHBAR address on ITS
-    console.log('Setting WHBAR address on ITS...');
-    const setWhbarTx = await service.setWhbarAddress(whbar.address);
-    await setWhbarTx.wait();
-    console.log(`WHBAR address set on ITS: ${whbar.address}`);
-
-    // Set WHBAR address on ITS
-    console.log('Setting token creation price on ITS...');
-    // $1 = 100 cents = 100 * 10^8 tinycents
-    const price = 100 * 10 ** 8;
-    const setTokenCreationPrice = await service.setTokenCreationPrice(price);
-    await setTokenCreationPrice.wait();
-    console.log(`Token creation price set on ITS: ${price} tinycents`);
 
     // Fund ITS with WHBAR if funding amount is specified
     if (fundingAmount && parseFloat(fundingAmount) > 0) {

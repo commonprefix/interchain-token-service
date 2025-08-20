@@ -46,6 +46,7 @@ const {
     INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
 } = require('./constants');
 
+const { deployWHBAR } = require('../scripts/deploy-whbar.js');
 const { createHtsToken } = require('../scripts/create-hts-token.js');
 const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
 
@@ -314,6 +315,7 @@ describe('Interchain Token Service', () => {
     deployFunctions.mintBurnFrom = makeDeployNewMintBurn(MINT_BURN_FROM);
     deployFunctions.interchainToken = deployNewInterchainToken;
 
+    let whbar;
     before(async () => {
         const wallets = await ethers.getSigners();
         wallet = wallets[0];
@@ -325,8 +327,17 @@ describe('Interchain Token Service', () => {
         console.log(`\tWallet #1 ${wallet.address} with ${ethers.utils.formatEther(wallet1Balance)} HBAR`);
         console.log(`\tWallet #2 ${otherWallet.address} with ${ethers.utils.formatEther(wallet2Balance)} HBAR`);
 
-        ({ service, gateway, gasService, create3Deployer, tokenManagerDeployer, interchainTokenDeployer, tokenManager, tokenHandler } =
-            await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [sourceChain, destinationChain]));
+        ({
+            service,
+            gateway,
+            gasService,
+            create3Deployer,
+            tokenManagerDeployer,
+            interchainTokenDeployer,
+            tokenManager,
+            tokenHandler,
+            whbar,
+        } = await deployAll(wallet, 'Test', ITS_HUB_ADDRESS, [sourceChain, destinationChain]));
 
         testErc20Token = await deployContract(wallet, 'TestERC20MintableBurnable', ['Test Token', 'TST', 18]);
     });
@@ -347,6 +358,7 @@ describe('Interchain Token Service', () => {
                 ITS_HUB_ADDRESS,
                 tokenManager.address,
                 tokenHandler.address,
+                whbar.address,
             ]);
         });
 
@@ -408,6 +420,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'ZeroAddress',
@@ -432,6 +447,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'ZeroAddress',
@@ -456,6 +474,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'InvalidChainName',
@@ -479,6 +500,9 @@ describe('Interchain Token Service', () => {
                     [],
                     deploymentKey,
                     gasOptions,
+                    wallet.address,
+                    wallet.address,
+                    whbar.address,
                 ),
             );
         });
@@ -501,6 +525,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'ZeroAddress',
@@ -525,6 +552,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'ZeroAddress',
@@ -549,6 +579,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'ZeroAddress',
@@ -573,6 +606,9 @@ describe('Interchain Token Service', () => {
                         [],
                         deploymentKey,
                         gasOptions,
+                        wallet.address,
+                        wallet.address,
+                        whbar.address,
                     ),
                 service,
                 'ZeroAddress',
@@ -595,6 +631,9 @@ describe('Interchain Token Service', () => {
                     '',
                     [],
                     deploymentKey,
+                    wallet.address,
+                    wallet.address,
+                    whbar.address,
                 ),
             );
         });
@@ -766,7 +805,6 @@ describe('Interchain Token Service', () => {
 
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const minter = '0x';
-            const operator = '0x';
             const { payload } = encodeReceiveHubMessage(
                 destinationChain,
                 encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
@@ -833,7 +871,6 @@ describe('Interchain Token Service', () => {
             const tokenId = getRandomBytes32();
             const tokenManagerAddress = await service.tokenManagerAddress(tokenId);
             const minter = '0x';
-            const operator = '0x';
             const { payload } = encodeReceiveHubMessage(
                 destinationChain,
                 encodeDeployInterchainTokenMessage(tokenId, tokenName, tokenSymbol, tokenDecimals, minter),
@@ -1533,7 +1570,7 @@ describe('Interchain Token Service', () => {
                 );
                 let transferToAddress = AddressZero;
 
-                if (type === 'lockUnlock' || type === 'lockUnlockFee') {
+                if (type === 'lockUnlock' || type === 'lockUnlockFee' || type === 'lockUnlockErc20') {
                     transferToAddress = tokenManager.address;
                 }
 
