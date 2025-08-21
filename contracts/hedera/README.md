@@ -70,6 +70,5 @@ It uses the [`IHRC719`](./IHRC719.sol) interface to call the `associate` method 
 - When registering a canonical token, only the `TokenManager` is associated with the token.
 - `InterchainTokenDeployer.sol` `deployedAddress` is not supported, since HTS tokens don't have deterministic addresses.
 - `interchainTokenAddress` was removed from `InterchainTokenService.sol`, since HTS tokens don't have deterministic addresses. `registeredTokenAddress` should be used instead.
-- `transmitInterchainTransfer` was removed from `InterchainTokenService.sol` since it's meant to be called from an `InterchainToken` contract, which is not used.
 - When creating a new interchain token, `TokenManager` is automatically associated with the token, as the creator.
 - Both HTS tokens and ERC20 tokens are supported for registration.

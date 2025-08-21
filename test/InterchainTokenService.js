@@ -46,7 +46,6 @@ const {
     INTERCHAIN_TRANSFER_WITH_METADATA_AND_GAS_VALUE,
 } = require('./constants');
 
-const { deployWHBAR } = require('../scripts/deploy-whbar.js');
 const { createHtsToken } = require('../scripts/create-hts-token.js');
 const { hederaClientFromHardhatConfig } = require('../scripts/hedera-client.js');
 
@@ -1337,7 +1336,9 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
-        it.skip('Should revert on transmit send token when service is paused [unsupported]', async () => {
+        it('Should revert on transmit send token when service is paused', async () => {
+            await service.setPauseStatus(true).then((tx) => tx.wait());
+
             await expectRevert(
                 (gasOptions) =>
                     service.transmitInterchainTransfer(tokenId, wallet.address, destinationChain, destAddress, amount, '0x', {
@@ -1351,7 +1352,7 @@ describe('Interchain Token Service', () => {
             await service.setPauseStatus(false).then((tx) => tx.wait());
         });
 
-        it.skip('Should revert on transmit send token when destination address is zero address [unsupported]', async () => {
+        it('Should revert on transmit send token when destination address is zero address', async () => {
             await expectRevert(
                 (gasOptions) =>
                     service.transmitInterchainTransfer(tokenId, wallet.address, destinationChain, '0x', amount, '0x', {
@@ -1363,7 +1364,7 @@ describe('Interchain Token Service', () => {
             );
         });
 
-        it.skip('Should revert on transmit send token when not called by interchain token [unsupported]', async () => {
+        it('Should revert on transmit send token when not called by interchain token', async () => {
             const errorSignatureHash = id('NotToken(address,address)');
             const selector = errorSignatureHash.substring(0, 10);
             const errorData = defaultAbiCoder.encode(['address', 'address'], [wallet.address, token.address]);

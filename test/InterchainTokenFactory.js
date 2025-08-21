@@ -60,7 +60,9 @@ describe('InterchainTokenFactory', () => {
         hederaPk = hederaClientInfo.hederaPk;
     });
 
-    let whbar, htsAddress, hts;
+    let whbar;
+    // eslint-disable-next-line no-unused-vars
+    let htsAddress, hts;
     before(async () => {
         [wallet, otherWallet] = await ethers.getSigners();
         ({ service, gateway, gasService, tokenFactory, whbar, htsAddress } = await deployAll(wallet, chainName, ITS_HUB_ADDRESS, [
@@ -76,7 +78,7 @@ describe('InterchainTokenFactory', () => {
         await whbar.connect(wallet).approve(tokenFactory.address, ethers.constants.MaxUint256);
     });
 
-    describe.only('Unsupported HTS Token Registration', async () => {
+    describe('Unsupported HTS Token Registration', async () => {
         const tokenManagerType = LOCK_UNLOCK;
         let operator;
 
