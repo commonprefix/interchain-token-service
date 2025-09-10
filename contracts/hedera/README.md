@@ -8,21 +8,33 @@ New HTS Interchain Tokens will have their Token Manager as the sole Supply Key (
 
 Certain ITS features are not supported due to HTS limitations, such as deploying a new Interchain Token with initial supply (more info below). Furthermore, HTS tokens don't have deterministic addresses, so users won't have the same token address as in other EVM chains. You can query the token address using `registeredTokenAddress(tokenId)` method in `InterchainTokenService`, or via the Token Manager.
 
+### Token Deployments
+
 Since the `createFungibleToken` precompile in Hedera requires a fee to be sent as value, an `WHBAR` contract (`WETH` equivalent) is used to hold the HBAR used for token creation. `InterchainTokenService` transfers certain amount of `WHBAR` to the newly deploying `TokenManagerProxy` contract. The `TokenManagerProxy` contract, during constructor, withdraws HBAR from `WHBAR`, and sends it to `InterchainTokenDeployer`, which finally uses it to pay for the token creation.
 
-For local deployments, the deploying user must ensure it has enough balance in the `WHBAR` contract and appropriate allowance to the `InterchainTokenFactory` contract, which will transfer the `WHBAR` to the `InterchainTokenService` contract.
+For **local deployments**, the deploying user must ensure it has enough balance in the `WHBAR` contract and appropriate allowance to the `InterchainTokenFactory` contract, which will transfer the `WHBAR` to the `InterchainTokenService` contract as the payment.
 
-For remote deployments, the balance of `InterchainTokenService` is used. The responsibility of keeping ITS funded on the `WHBAR` contract lies with the contract deployer (Axelar), it is assumed that a top-up mechanism is in place to ensure the contract has enough WHBAR to create new tokens.
+For **remote deployments**, the balance of `InterchainTokenService` is used. The responsibility of keeping ITS funded on the `WHBAR` contract lies with the contract deployer (Axelar), it is assumed that a top-up mechanism is in place to ensure the contract has enough WHBAR to create new tokens.
+
+The price of creating a new HTS token can be queried from `InterchainTokenService` via `tokenCreationPriceTinybars()(uint256)`. See `TokenCreationPricing.sol` for more details.
 
 > _Why not send coins directly to the `InterchainTokenService` contract?_
 >
 > We don't want to change the relayer to send value directly to the `execute` method of the `InterchainTokenService` contract. Users _could_ send value directly via the factory, however to simplify the ITS contract the same WHBAR procedure is used, thus making it consistent regardless of whether the deployment is local or remote.
 
+### Flows
+
 ![Deploy New Interchain Token Flow](./diagrams/deploy_interchain_token.png)
+
+Above you can see the general flow for deploying a new Interchain Token on Hedera. For local deployments however the user would deploy via the `InterchainTokenFactory`.
 
 ![Mint Native Interchain Token](./diagrams/native_token_minting.png)
 
+Above you can see the flow for minting an existing native Interchain Token on Hedera. The minting must happen via the Token Manager. ITS and a custom minter are allowed to mint.
+
 ![Register Custom HTS Token](./diagrams/register_custom_hts_token.png)
+
+Above you can see the flow for registering an existing HTS token as an Interchain Token on Hedera. A new Token Manager contract is deployed as a `LOCK/UNLOCK` manager.
 
 ### Deploying with Initial Supply
 
@@ -42,7 +54,7 @@ Hedera tokens support so-called facades, which allow them to be used as ERC20 to
 
 Unlike a regular ERC20 token, HTS tokens don't emit `Transfer` to and from the zero address on mint and burn.
 
-Association-related methods are also supported, like `associate`, `dissociate`, and `isAssociated`. See [hip-719](https://hips.hedera.com/hip/hip-719) for more details.
+Association-related methods are also supported, like `associate`, `dissociate`, and `isAssociated`. See [hip-719](https://hips.hedera.com/hip/hip-719) and [`IHRC719`](./IHRC719.sol) for more details.
 
 ### `InterchainTokenExecutable`
 
@@ -59,7 +71,7 @@ It uses the [`IHRC719`](./IHRC719.sol) interface to call the `associate` method 
 ### Hedera-related Notes
 
 - Hedera contract and token "rent" and "expiry" are disabled on Hedera and not supported in this implementation.
-- Unlike a regular ERC20 token, the [maximum supply for an HTS token is 2^63](https://docs.hedera.com/hedera/sdks-and-apis/sdks/token-service/define-a-token#token-properties). There's planned support for decimal translation in ITS.
+- Unlike a regular ERC20 token, the [maximum supply for an HTS token is 2^63](https://docs.hedera.com/hedera/sdks-and-apis/sdks/token-service/define-a-token#token-properties).
 - HTS tokens with the following keys are not supported by ITS: `kycKey`, `wipeKey`, `freezeKey`, `pauseKey`. `adminKey` can update existing keys, but cannot add new keys if they were not set during the creation of the token ([see here](https://docs.hedera.com/hedera/sdks-and-apis/sdks/token-service/update-a-token)).
 - `HTS.sol` library is a subset of the Hedera provided system library [HederaTokenService](https://github.com/hashgraph/hedera-smart-contracts/blob/bc3a549c0ca062c51b0045fd1916fdaa0558a360/contracts/system-contracts/hedera-token-service/HederaTokenService.sol). Functions are modified to revert instead of returning response codes.
 - Currently new tokens created via HTS EVM system contract can have **only one** Supply Key (Minter).
