@@ -7,7 +7,7 @@
 > - [`Gas and Fees on Hedera`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/gas-and-fees)
 > - [`JSON-RPC Relay`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/json-rpc-relay)
 >
-> This document also assumes familiarity with the canonical [Interchain Token Service](https://github.com/axelarnetwork/interchain-token-service) and its concepts, and will mainly focus on the differences and specifics of the Hedera implementation. The fork was done from commit [fce4ba2f122bf6bd568f1a08186842937b6fa1ca](https://github.com/axelarnetwork/interchain-token-service/commit/fce4ba2f122bf6bd568f1a08186842937b6fa1ca);
+> This document also assumes familiarity with the canonical [Interchain Token Service](https://github.com/axelarnetwork/interchain-token-service) and its concepts, and will mainly focus on the differences and specifics of the Hedera implementation. The fork was done from commit [fce4ba2f122bf6bd568f1a08186842937b6fa1ca](https://github.com/axelarnetwork/interchain-token-service/tree/fce4ba2f122bf6bd568f1a08186842937b6fa1ca);
 
 ## Overview
 
