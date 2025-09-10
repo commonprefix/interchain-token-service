@@ -28,9 +28,13 @@ The price of creating a new HTS token can be queried from `InterchainTokenServic
 
 Above you can see the general flow for deploying a new Interchain Token on Hedera. For local deployments however the user would deploy via the `InterchainTokenFactory`.
 
+---
+
 ![Mint Native Interchain Token](./diagrams/native_token_minting.png)
 
 Above you can see the flow for minting an existing native Interchain Token on Hedera. The minting must happen via the Token Manager. ITS and a custom minter are allowed to mint.
+
+---
 
 ![Register Custom HTS Token](./diagrams/register_custom_hts_token.png)
 
