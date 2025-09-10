@@ -1,15 +1,17 @@
 # Hedera ITS Support
 
 > [!NOTE]
-> It is advised to read the following documents first:
+> It is advised to read the following Hedera documents first:
 > - [`For EVM Developers Migrating to Hedera`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/understanding-hederas-evm-differences-and-compatibility/for-evm-developers-migrating-to-hedera)
 > - [`Tokens on Hedera`](https://docs.hedera.com/hedera/core-concepts/tokens)
 > - [`Gas and Fees on Hedera`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/gas-and-fees)
 > - [`JSON-RPC Relay`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/json-rpc-relay)
+>
+> This document also assumes familiarity with the canonical [Interchain Token Service](https://github.com/axelarnetwork/interchain-token-service) and its concepts, and will mainly focus on the differences and specifics of the Hedera implementation. The fork was done from commit [fce4ba2f122bf6bd568f1a08186842937b6fa1ca](https://github.com/axelarnetwork/interchain-token-service/commit/fce4ba2f122bf6bd568f1a08186842937b6fa1ca);
 
 ## Overview
 
-ITS contracts in this repo are modified to support Hedera Token Service. All new Interchain Token will be created via HTS, while existing HTS and ERC20 tokens are supported for registration.
+ITS contracts in this repo are modified to support Hedera Token Service. All new Interchain Token will be created via [HTS](./HTS.sol), while existing HTS and ERC20 tokens are supported for registration.
 
 New HTS Interchain Tokens will have their Token Manager as the sole Supply Key ("MinterBurner" equivalent in Hedera) and Treasury (the contract that gets the newly minted coins). After minting, the Treasury transfers the tokens to the designated account. Before burning, the tokens are transfered back to the Treasury. Token Managers use typical `allowance` and `transferFrom` to move tokens before burning. Token Manager keeps track of minters and allows for external minting and burning (see `Minter.sol`).
 
