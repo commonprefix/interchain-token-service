@@ -1,5 +1,12 @@
 # Hedera ITS Support
 
+> [!NOTE]
+> It is advised to read the following documents first:
+> - [`For EVM Developers Migrating to Hedera`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/understanding-hederas-evm-differences-and-compatibility/for-evm-developers-migrating-to-hedera)
+> - [`Tokens on Hedera`](https://docs.hedera.com/hedera/core-concepts/tokens)
+> - [`Gas and Fees on Hedera`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/gas-and-fees)
+> - [`JSON-RPC Relay`](https://docs.hedera.com/hedera/core-concepts/smart-contracts/json-rpc-relay)
+
 ## Overview
 
 ITS contracts in this repo are modified to support Hedera Token Service. All new Interchain Token will be created via HTS, while existing HTS and ERC20 tokens are supported for registration.
