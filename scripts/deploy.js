@@ -10,6 +10,9 @@ const { ITS_HUB_ADDRESS } = require('../test/constants');
 const { deployHTS } = require('./deploy-hts');
 const { deployWHBAR, fundWithWHBAR } = require('./deploy-whbar');
 
+// Amount of WHBAR to fund ITS with
+const ITS_FUND_AMOUNT_WHBAR = '300';
+// HTS library path+name
 const HTS_LIBRARY_NAME = 'contracts/hedera/HTS.sol:HTS';
 // $1 = 100 cents = 100 * 10^8 tinycents
 const DEFAULT_TOKEN_CREATION_PRICE = 100 * 10 ** 8;
@@ -134,7 +137,7 @@ async function deployAll(
     factoryDeploymentKey = deploymentKey + 'Factory',
     htsAddress = null,
     whbarAddress = null,
-    fundingAmount = '300', // Default 300 HBAR funding for ITS
+    fundingAmount = ITS_FUND_AMOUNT_WHBAR,
 ) {
     // Override with provided addresses if specified
     if (htsAddress) deploymentContext.htsAddress = htsAddress;

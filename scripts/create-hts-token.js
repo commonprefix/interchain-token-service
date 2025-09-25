@@ -4,19 +4,29 @@ function evmAddressToAccountId(evmAddress) {
     return AccountId.fromEvmAddress(evmAddress);
 }
 
-async function createHtsToken(hederaClient, operatorPk, name, symbol, decimals = 8, intialSupply = 0) {
-    const tokenCreateTx = new TokenCreateTransaction()
+async function createHtsToken(hederaClient, operatorPk, name, symbol, decimals = 8, intialSupply = 0, maxSupply = 0) {
+    let tx = new TokenCreateTransaction()
         .setTokenName(name)
         .setTokenSymbol(symbol)
         .setTokenType(TokenType.FungibleCommon)
         .setDecimals(decimals)
         .setInitialSupply(intialSupply)
         .setTreasuryAccountId(hederaClient._operator.accountId)
-        .setSupplyType(TokenSupplyType.Infinite)
-        .setSupplyKey(operatorPk)
-        .freezeWith(hederaClient);
+        .setSupplyKey(operatorPk);
 
-    const tokenCreateSign = await tokenCreateTx.sign(operatorPk);
+    if (maxSupply > 0) {
+        if (intialSupply > maxSupply) {
+            throw new Error('Initial supply cannot be greater than max supply');
+        }
+
+        tx = tx.setSupplyType(TokenSupplyType.Finite).setMaxSupply(maxSupply);
+    } else {
+        tx = tx.setSupplyType(TokenSupplyType.Infinite);
+    }
+
+    tx = tx.freezeWith(hederaClient);
+
+    const tokenCreateSign = await tx.sign(operatorPk);
     const tokenCreateSubmit = await tokenCreateSign.execute(hederaClient);
     const tokenCreateRx = await tokenCreateSubmit.getReceipt(hederaClient);
     const tokenId = tokenCreateRx.tokenId;

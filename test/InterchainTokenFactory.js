@@ -246,6 +246,26 @@ describe('InterchainTokenFactory', () => {
                 .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
         });
 
+        it('Should register a token with lower max-supply', async () => {
+            const maxSupply = 10000;
+            const [maxSupplyTokenAddress] = await createHtsToken(
+                hederaClient,
+                hederaPk,
+                'Max Supply Token',
+                'MAXSPL',
+                8,
+                maxSupply,
+                maxSupply,
+            );
+            const maxSupplyToken = await getContractAt('IERC20Named', maxSupplyTokenAddress, wallet);
+
+            const params = defaultAbiCoder.encode(['bytes', 'address'], ['0x', maxSupplyToken.address]);
+
+            await expect(tokenFactory.registerCanonicalInterchainToken(maxSupplyToken.address))
+                .to.emit(service, 'TokenManagerDeployed')
+                .withArgs(tokenId, tokenManagerAddress, LOCK_UNLOCK, params);
+        });
+
         it('Should not register a non-existing token', async () => {
             await expectRevert(
                 (gasOptions) => tokenFactory.registerCanonicalInterchainToken(tokenFactory.address, { gasOptions }),

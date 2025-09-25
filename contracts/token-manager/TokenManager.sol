@@ -15,7 +15,7 @@ import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol
 import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 
-import { HTS } from '../hedera/HTS.sol';
+import { HTS, IHederaTokenService } from '../hedera/HTS.sol';
 import { Minter } from '../utils/Minter.sol';
 
 /**
@@ -236,7 +236,21 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
     function approveService() external onlyService {
         address tokenAddress_ = this.tokenAddress();
         bool isHTSToken = HTS.isToken(tokenAddress_);
-        uint256 amount = isHTSToken ? INT64_MAX : UINT256_MAX;
+        uint256 amount;
+        if (isHTSToken) {
+            IHederaTokenService.FungibleTokenInfo memory info = HTS.getFungibleTokenInfo(tokenAddress_);
+            uint256 maxSupply = uint256(uint64(info.tokenInfo.token.maxSupply));
+
+            // If maxSupply is 0, the token has no max supply
+            // thus we approve the maximum value
+            if (maxSupply != 0 && maxSupply < INT64_MAX) {
+                amount = maxSupply;
+            } else {
+                amount = INT64_MAX;
+            }
+        } else {
+            amount = UINT256_MAX;
+        }
         /**
          * @dev Some tokens may not obey the infinite approval.
          * Even so, it is unexpected to run out of allowance in practice.
