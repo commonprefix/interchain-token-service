@@ -44,9 +44,9 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
         ) {
             _mintToken(ITokenManager(tokenManager), tokenAddress, to, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK)) {
-            _transferTokenFrom(tokenAddress, tokenManager, to, amount);
+            _transferTokenOut(tokenAddress, tokenManager, to, amount);
         } else if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            amount = _transferTokenFromWithFee(tokenAddress, tokenManager, to, amount);
+            amount = _transferTokenOutWithFee(tokenAddress, tokenManager, to, amount);
         } else {
             revert UnsupportedTokenManagerType(tokenManagerType);
         }
@@ -122,19 +122,32 @@ contract TokenHandler is ITokenHandler, ITokenManagerType, ReentrancyGuard, Crea
 
     /**
      * @notice This function prepares a token manager after it is deployed
-     * @param tokenManagerType The token manager type.
-     * @param tokenManager The address of the token manager.
      */
     // slither-disable-next-line locked-ether
-    function postTokenManagerDeploy(uint256 tokenManagerType, ITokenManager tokenManager) external payable {
-        if (tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK) || tokenManagerType == uint256(TokenManagerType.LOCK_UNLOCK_FEE)) {
-            tokenManager.approveService();
-        }
-    }
+    function postTokenManagerDeploy(uint256 /* tokenManagerType */, ITokenManager /* tokenManager */) external payable {}
 
     function _transferTokenFrom(address tokenAddress, address from, address to, uint256 amount) internal {
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(tokenAddress).safeTransferFrom(from, to, amount);
+    }
+
+    function _transferTokenOut(address tokenAddress, address tokenManager, address to, uint256 amount) internal {
+        ITokenManager(tokenManager).transferTokenOut(tokenAddress, to, amount);
+    }
+
+    function _transferTokenOutWithFee(
+        address tokenAddress,
+        address tokenManager,
+        address to,
+        uint256 amount
+    ) internal noReEntrancy returns (uint256) {
+        uint256 balanceBefore = IERC20(tokenAddress).balanceOf(to);
+
+        _transferTokenOut(tokenAddress, tokenManager, to, amount);
+
+        uint256 diff = IERC20(tokenAddress).balanceOf(to) - balanceBefore;
+
+        return diff < amount ? diff : amount;
     }
 
     function _transferTokenFromWithFee(

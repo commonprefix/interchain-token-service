@@ -58,8 +58,13 @@ describe('Token Manager', () => {
         await expectRevert((gasOptions) => TestTokenManager.addFlowOut(0, gasOptions), TestTokenManager, 'NotService', [owner.address]);
     });
 
-    it('Should revert on approveService when calling directly', async () => {
-        await expectRevert((gasOptions) => TestTokenManager.approveService(gasOptions), TestTokenManager, 'NotService', [owner.address]);
+    it('Should revert on transferTokenOut when calling directly', async () => {
+        await expectRevert(
+            (gasOptions) => TestTokenManager.transferTokenOut(other.address, owner.address, 1234, gasOptions),
+            TestTokenManager,
+            'NotService',
+            [owner.address],
+        );
     });
 
     it('Should revert on mintToken when calling directly', async () => {
