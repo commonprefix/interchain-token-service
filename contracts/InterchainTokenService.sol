@@ -15,16 +15,17 @@ import { InterchainAddressTracker } from '@axelar-network/axelar-gmp-sdk-solidit
 import { IInterchainTokenService } from './interfaces/IInterchainTokenService.sol';
 import { ITokenHandler } from './interfaces/ITokenHandler.sol';
 import { ITokenManagerDeployer } from './interfaces/ITokenManagerDeployer.sol';
-import { IInterchainTokenDeployer } from './interfaces/IInterchainTokenDeployer.sol';
 import { IInterchainTokenExecutable } from './interfaces/IInterchainTokenExecutable.sol';
 import { IInterchainTokenExpressExecutable } from './interfaces/IInterchainTokenExpressExecutable.sol';
 import { ITokenManager } from './interfaces/ITokenManager.sol';
 import { IERC20Named } from './interfaces/IERC20Named.sol';
-import { IMinter } from './interfaces/IMinter.sol';
 import { Create3AddressFixed } from './utils/Create3AddressFixed.sol';
 import { Operator } from './utils/Operator.sol';
 import { ChainTracker } from './utils/ChainTracker.sol';
+import { TokenCreationPricing } from './utils/TokenCreationPricing.sol';
 import { ItsHubAddressTracker } from './utils/ItsHubAddressTracker.sol';
+
+import { IWHBAR } from './hedera/IWHBAR.sol';
 
 /**
  * @title The Interchain Token Service
@@ -42,6 +43,7 @@ contract InterchainTokenService is
     ExpressExecutorTracker,
     InterchainAddressTracker,
     ChainTracker,
+    TokenCreationPricing,
     ItsHubAddressTracker,
     IInterchainTokenService
 {
@@ -129,8 +131,9 @@ contract InterchainTokenService is
         string memory chainName_,
         string memory itsHubAddress_,
         address tokenManagerImplementation_,
-        address tokenHandler_
-    ) ItsHubAddressTracker(itsHubAddress_) {
+        address tokenHandler_,
+        address whbarAddress_
+    ) ItsHubAddressTracker(itsHubAddress_) TokenCreationPricing(whbarAddress_) {
         if (
             gasService_ == address(0) ||
             tokenManagerDeployer_ == address(0) ||
@@ -234,17 +237,6 @@ contract InterchainTokenService is
      */
     function registeredTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
         tokenAddress = ITokenManager(deployedTokenManager(tokenId)).tokenAddress();
-    }
-
-    /**
-     * @notice Returns the address of the interchain token associated with the given tokenId.
-     * @dev The token does not need to exist.
-     * @param tokenId The tokenId of the interchain token.
-     * @return tokenAddress The address of the interchain token.
-     */
-    function interchainTokenAddress(bytes32 tokenId) public view returns (address tokenAddress) {
-        tokenId = _getInterchainTokenSalt(tokenId);
-        tokenAddress = _create3Address(tokenId);
     }
 
     /**
@@ -404,9 +396,7 @@ contract InterchainTokenService is
         emit InterchainTokenIdClaimed(tokenId, deployer, salt);
 
         if (bytes(destinationChain).length == 0) {
-            address tokenAddress = _deployInterchainToken(tokenId, minter, name, symbol, decimals);
-
-            _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minter);
+            _deployTokenManagerWithInterchainToken(tokenId, name, symbol, decimals, minter);
         } else {
             if (chainNameHash == keccak256(bytes(destinationChain))) revert CannotDeployRemotelyToSelf();
 
@@ -640,6 +630,14 @@ contract InterchainTokenService is
     }
 
     /**
+     * @notice Used to set the token creation price in tinycents.
+     * @param price The new token creation price in tinycents.
+     */
+    function setTokenCreationPrice(uint256 price) external onlyOperatorOrOwner {
+        _setTokenCreationPrice(price);
+    }
+
+    /**
      * @notice Allows the owner to pause/unpause the token service.
      * @param paused Boolean value representing whether to pause or unpause.
      */
@@ -651,22 +649,15 @@ contract InterchainTokenService is
         }
     }
 
-    /**
-     * @notice Allows the owner to migrate minter of native interchain tokens from ITS to the corresponding token manager.
-     * @param tokenId the tokenId of the registered token.
-     */
-    function migrateInterchainToken(bytes32 tokenId) external onlyOwner {
-        ITokenManager tokenManager_ = deployedTokenManager(tokenId);
-        address tokenAddress = tokenManager_.tokenAddress();
-        IMinter(tokenAddress).transferMintership(address(tokenManager_));
-    }
-
     /****************\
     INTERNAL FUNCTIONS
     \****************/
 
     function _setup(bytes calldata params) internal override {
-        (address operator, string memory chainName_, string[] memory trustedChainNames) = abi.decode(params, (address, string, string[]));
+        (address operator, string memory chainName_, string[] memory trustedChainNames, uint256 _tokenCreationPrice) = abi.decode(
+            params,
+            (address, string, string[], uint256)
+        );
         if (operator == address(0)) revert ZeroAddress();
         if (bytes(chainName_).length == 0 || keccak256(bytes(chainName_)) != chainNameHash) revert InvalidChainName();
 
@@ -682,6 +673,8 @@ contract InterchainTokenService is
                 _removeTrustedAddress(trustedChainName);
             }
         }
+
+        _setTokenCreationPrice(_tokenCreationPrice);
     }
 
     /**
@@ -767,11 +760,8 @@ contract InterchainTokenService is
             payload,
             (uint256, bytes32, string, string, uint8, bytes)
         );
-        address tokenAddress;
 
-        tokenAddress = _deployInterchainToken(tokenId, minterBytes, name, symbol, decimals);
-
-        _deployTokenManager(tokenId, TokenManagerType.NATIVE_INTERCHAIN_TOKEN, tokenAddress, minterBytes);
+        _deployTokenManagerWithInterchainToken(tokenId, name, symbol, decimals, minterBytes);
     }
 
     /**
@@ -973,6 +963,67 @@ contract InterchainTokenService is
     /**
      * @notice Deploys a token manager.
      * @param tokenId The ID of the token.
+     * @param name Name of the token.
+     * @param symbol Symbol of the token.
+     * @param decimals Decimals of the token.
+     * @param operator The operator of the token manager.
+     */
+    function _deployTokenManagerWithInterchainToken(
+        bytes32 tokenId,
+        string memory name,
+        string memory symbol,
+        uint8 decimals,
+        bytes memory operator
+    ) internal {
+        if (bytes(name).length == 0) revert EmptyTokenName();
+        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
+
+        // Price in tinybars
+        uint256 tokenCreatePrice = tokenCreationPriceTinybars();
+
+        // TokenManagerProxy deploy params
+        bytes memory params = abi.encode(operator, name, symbol, decimals, tokenCreatePrice);
+
+        TokenManagerType tokenManagerType = TokenManagerType.NATIVE_INTERCHAIN_TOKEN;
+
+        // Get the pre-determined token manager address
+        address tokenManager_ = tokenManagerAddress(tokenId);
+
+        // Approve the token manager deployer to spend the token creation price
+        IWHBAR(whbarAddress).approve(tokenManager_, tokenCreatePrice);
+
+        (bool success, bytes memory returnData) = tokenManagerDeployer.delegatecall(
+            abi.encodeWithSelector(ITokenManagerDeployer.deployTokenManager.selector, tokenId, tokenManagerType, params)
+        );
+        if (!success) revert TokenManagerDeploymentFailed(returnData);
+
+        assembly {
+            tokenManager_ := mload(add(returnData, 0x20))
+        }
+
+        (success, returnData) = tokenHandler.delegatecall(
+            abi.encodeWithSelector(ITokenHandler.postTokenManagerDeploy.selector, tokenManagerType, tokenManager_)
+        );
+        if (!success) revert PostDeployFailed(returnData);
+
+        // Get the token address from the deployed token manager
+        address tokenAddress = ITokenManager(tokenManager_).tokenAddress();
+
+        address minter;
+        if (bytes(operator).length != 0) minter = operator.toAddress();
+
+        // slither-disable-next-line reentrancy-events
+        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
+
+        // TokenManagerDeployed is emited with this payload to keep it consistent with _deployTokenManager
+        bytes memory tokenManagerDeployParams = abi.encode(operator, tokenAddress);
+        // slither-disable-next-line reentrancy-events
+        emit TokenManagerDeployed(tokenId, tokenManager_, tokenManagerType, tokenManagerDeployParams);
+    }
+
+    /**
+     * @notice Deploys a token manager.
+     * @param tokenId The ID of the token.
      * @param tokenManagerType The type of the token manager to be deployed.
      * @param tokenAddress The address of the token to be managed.
      * @param operator The operator of the token manager.
@@ -1007,44 +1058,6 @@ contract InterchainTokenService is
      */
     function _getInterchainTokenSalt(bytes32 tokenId) internal pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(PREFIX_INTERCHAIN_TOKEN_SALT, tokenId));
-    }
-
-    /**
-     * @notice Deploys an interchain token.
-     * @param tokenId The ID of the token.
-     * @param minterBytes The minter address for the token.
-     * @param name The name of the token.
-     * @param symbol The symbol of the token.
-     * @param decimals The number of decimals of the token.
-     */
-    function _deployInterchainToken(
-        bytes32 tokenId,
-        bytes memory minterBytes,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) internal returns (address tokenAddress) {
-        if (bytes(name).length == 0) revert EmptyTokenName();
-        if (bytes(symbol).length == 0) revert EmptyTokenSymbol();
-
-        bytes32 salt = _getInterchainTokenSalt(tokenId);
-
-        address minter;
-        if (bytes(minterBytes).length != 0) minter = minterBytes.toAddress();
-
-        (bool success, bytes memory returnData) = interchainTokenDeployer.delegatecall(
-            abi.encodeWithSelector(IInterchainTokenDeployer.deployInterchainToken.selector, salt, tokenId, minter, name, symbol, decimals)
-        );
-        if (!success) {
-            revert InterchainTokenDeploymentFailed(returnData);
-        }
-
-        assembly {
-            tokenAddress := mload(add(returnData, 0x20))
-        }
-
-        // slither-disable-next-line reentrancy-events
-        emit InterchainTokenDeployed(tokenId, tokenAddress, minter, name, symbol, decimals);
     }
 
     /**

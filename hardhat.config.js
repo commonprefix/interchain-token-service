@@ -49,9 +49,11 @@ const itsCompilerSettings = {
     version: '0.8.27',
     settings: {
         evmVersion: process.env.EVM_VERSION || 'london',
+        // TODO(hedera) check about using viaIR
+        viaIR: true,
         optimizer: {
             ...optimizerSettings,
-            runs: 100,
+            runs: 1,
         },
     },
 };
@@ -73,8 +75,24 @@ module.exports = {
                   'contracts/InterchainTokenService.sol': itsCompilerSettings,
               },
     },
-    defaultNetwork: 'hardhat',
-    networks,
+    defaultNetwork: 'hedera-local',
+    networks: {
+        ...networks,
+        'hedera-local': {
+            url: process.env.HEDERA_LOCAL_RPC_URL ?? 'http://localhost:7546',
+            consensusUrl: process.env.HEDERA_LOCAL_CONSENSUS_URL ?? 'http://localhost:50211',
+            nodeId: process.env.HEDERA_LOCAL_NODE_ID ?? '0.0.3',
+            operatorKey: process.env.HEDERA_PK ?? '0x105d050185ccb907fba04dd92d8de9e32c18305e097ab41dadda21489a211524',
+            operatorId: process.env.HEDERA_ACCOUNT_ID ?? '0.0.1012',
+            name: 'Hedera Local',
+            accounts: [
+                '0x105d050185ccb907fba04dd92d8de9e32c18305e097ab41dadda21489a211524',
+                '0x2e1d968b041d84dd120a5860cee60cd83f9374ef527ca86996317ada3d0d03e7',
+                '0x45a5a7108a18dd5013cf2d5857a28144beadc9c70b3bdbd914e38df4e804b8d8',
+            ],
+            chainId: 298,
+        },
+    },
     etherscan,
     mocha: {
         timeout: 1000000,

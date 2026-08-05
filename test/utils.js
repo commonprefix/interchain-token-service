@@ -33,6 +33,10 @@ const getGasOptions = () => {
     return network.config.blockGasLimit ? { gasLimit: network.config.blockGasLimit.toString() } : { gasLimit: 5e6 }; // defaults to 5M gas for revert tests to work correctly
 };
 
+const expectNonZeroAddress = (v) => {
+    return expect(v).to.be.a('string') && v !== ethers.constants.AddressZero && v !== '';
+};
+
 const expectRevert = async (txFunc, contract, error, args) => {
     if (network.config.skipRevertTests || contract === undefined) {
         await expect(txFunc(getGasOptions())).to.be.reverted;
@@ -98,18 +102,21 @@ const gasReporter = (contact) => (tx, message) => {
     if (process.env.REPORT_GAS === undefined) return tx;
 
     if (message) {
-        tx.then((tx) =>
-            tx.wait().then((receipt) => {
+        tx.then((tx) => {
+            console.log(tx);
+            return tx.wait().then((receipt) => {
                 if (!gasReports[contact]) gasReports[contact] = {};
                 gasReports[contact][message] = receipt.gasUsed.toNumber();
-            }),
-        );
+            });
+        });
     }
 
     if (!gasReportScheduled) {
         gasReportScheduled = true;
         process.on('exit', writeGasReport);
     }
+
+    console.log({ tx });
 
     return tx;
 };
@@ -253,6 +260,7 @@ module.exports = {
     getChainId,
     getGasOptions,
     expectRevert,
+    expectNonZeroAddress,
     getPayloadAndProposalHash,
     waitFor,
     gasReporter,

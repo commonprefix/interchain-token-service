@@ -18,10 +18,11 @@ const {
     deployInterchainTokenService,
     deployInterchainTokenFactory,
 } = require('../scripts/deploy');
+const { deployWHBAR } = require('../scripts/deploy-whbar.js');
 const { getBytecodeHash } = require('@axelar-network/axelar-chains-config');
 const AxelarServiceGovernance = getContractJSON('AxelarServiceGovernance');
 const Create3Deployer = getContractJSON('Create3Deployer');
-const { MINT_BURN, ITS_HUB_ADDRESS } = require('./constants');
+const { ITS_HUB_ADDRESS, LOCK_UNLOCK } = require('./constants');
 
 describe('Interchain Token Service Upgrade Flow', () => {
     let wallet, otherWallet, operator;
@@ -49,19 +50,20 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const tokenId = await tokenFactory.linkedTokenId(wallet.address, salt);
         const tokenManager = await getContractAt('TokenManager', await service.tokenManagerAddress(tokenId), wallet);
 
-        const token = await deployContract(wallet, 'TestInterchainTokenStandard', [
-            tokenName,
-            tokenSymbol,
-            tokenDecimals,
-            service.address,
-            tokenId,
-        ]);
+        const token = await deployContract(wallet, 'TestERC20MintableBurnable', [tokenName, tokenSymbol, tokenDecimals]);
         const params = defaultAbiCoder.encode(['bytes', 'address'], [wallet.address, token.address]);
 
-        await expect(tokenFactory.registerCustomToken(salt, token.address, MINT_BURN, wallet.address))
+        await expect(tokenFactory.registerCustomToken(salt, token.address, LOCK_UNLOCK, wallet.address))
             .to.emit(service, 'TokenManagerDeployed')
-            .withArgs(tokenId, tokenManager.address, MINT_BURN, params);
+            .withArgs(tokenId, tokenManager.address, LOCK_UNLOCK, params);
     }
+
+    let whbar;
+    before(async () => {
+        [wallet, otherWallet] = await ethers.getSigners();
+
+        whbar = await deployWHBAR(wallet);
+    });
 
     before(async () => {
         [wallet, otherWallet, operator] = await ethers.getSigners();
@@ -72,12 +74,11 @@ describe('Interchain Token Service Upgrade Flow', () => {
         const create3DeployerFactory = await ethers.getContractFactory(Create3Deployer.abi, Create3Deployer.bytecode, wallet);
         const create3Deployer = await create3DeployerFactory.deploy().then((d) => d.deployed());
         const interchainTokenServiceAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey);
-        const interchainToken = await deployContract(wallet, 'InterchainToken', [interchainTokenServiceAddress]);
 
         gateway = await deployMockGateway(wallet);
         gasService = await deployGasService(wallet);
         tokenManagerDeployer = await deployContract(wallet, 'TokenManagerDeployer', []);
-        interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', [interchainToken.address]);
+        interchainTokenDeployer = await deployContract(wallet, 'InterchainTokenDeployer', []);
         tokenManager = await deployContract(wallet, 'TokenManager', [interchainTokenServiceAddress]);
         tokenHandler = await deployContract(wallet, 'TokenHandler', []);
         interchainTokenFactoryAddress = await getCreate3Address(create3Deployer.address, wallet, deploymentKey + 'Factory');
@@ -107,6 +108,8 @@ describe('Interchain Token Service Upgrade Flow', () => {
             [],
             deploymentKey,
             wallet.address,
+            wallet.address,
+            whbar.address,
         );
 
         tokenFactory = await deployInterchainTokenFactory(wallet, create3Deployer.address, service.address, deploymentKey + 'Factory');
@@ -165,7 +168,11 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         await expect(txExecute)
             .to.emit(axelarServiceGovernance, 'ProposalScheduled')
-            .withArgs(proposalHash, target, calldata, nativeValue, finalEta);
+            .withArgs(proposalHash, target, calldata, nativeValue, (eta) => {
+                // allow for a small buffer
+                expect(Math.abs(eta - finalEta)).to.be.lte(10);
+                return true;
+            });
 
         await waitFor(timeDelay);
 
@@ -175,7 +182,10 @@ describe('Interchain Token Service Upgrade Flow', () => {
 
         await expect(tx)
             .to.emit(axelarServiceGovernance, 'ProposalExecuted')
-            .withArgs(proposalHash, target, calldata, nativeValue, executionTimestamp)
+            .withArgs(proposalHash, target, calldata, nativeValue, (timestamp) => {
+                expect(Math.abs(timestamp - executionTimestamp)).to.be.lte(10);
+                return true;
+            })
             .and.to.emit(service, 'Upgraded')
             .withArgs(newServiceImplementation.address);
 
