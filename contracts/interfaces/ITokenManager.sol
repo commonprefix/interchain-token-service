@@ -73,9 +73,13 @@ interface ITokenManager is IBaseTokenManager, IMinter, ITokenManagerType, IOpera
     function setFlowLimit(uint256 flowLimit_) external;
 
     /**
-     * @notice A function to renew approval to the service if we need to.
+     * @notice External function to allow the service to transfer tokens out of the token manager.
+     * @dev The token manager pushes its own balance, so this consumes no allowance from the service.
+     * @param tokenAddress_ The address of the token, since its cheaper to pass it in instead of reading it as the token manager.
+     * @param to The recipient.
+     * @param amount The amount to transfer out.
      */
-    function approveService() external;
+    function transferTokenOut(address tokenAddress_, address to, uint256 amount) external;
 
     /**
      * @notice Getter function for the parameters of a lock/unlock TokenManager.

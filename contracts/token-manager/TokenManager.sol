@@ -15,7 +15,7 @@ import { IERC20MintableBurnable } from '../interfaces/IERC20MintableBurnable.sol
 import { Operator } from '../utils/Operator.sol';
 import { FlowLimit } from '../utils/FlowLimit.sol';
 
-import { HTS, IHederaTokenService } from '../hedera/HTS.sol';
+import { HTS } from '../hedera/HTS.sol';
 import { Minter } from '../utils/Minter.sol';
 
 /**
@@ -25,9 +25,6 @@ import { Minter } from '../utils/Minter.sol';
 contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementation, Multicall {
     using AddressBytes for bytes;
     using SafeTokenCall for IERC20;
-
-    uint256 internal constant UINT256_MAX = type(uint256).max;
-    uint256 internal constant INT64_MAX = uint256(uint64(type(int64).max));
 
     address public immutable interchainTokenService;
 
@@ -231,34 +228,18 @@ contract TokenManager is ITokenManager, Minter, Operator, FlowLimit, Implementat
     }
 
     /**
-     * @notice A function to renew approval to the service if we need to.
+     * @notice External function to allow the service to transfer tokens out of this token manager.
+     * @dev This token manager pushes its own balance, so no allowance to the service is consumed.
+     * @param tokenAddress_ The address of the token, since its cheaper to pass it in instead of reading it as the token manager.
+     * @param to The recipient.
+     * @param amount The amount to transfer out.
      */
-    function approveService() external onlyService {
-        address tokenAddress_ = this.tokenAddress();
-        bool isHTSToken = HTS.isToken(tokenAddress_);
-        uint256 amount;
-        if (isHTSToken) {
-            IHederaTokenService.FungibleTokenInfo memory info = HTS.getFungibleTokenInfo(tokenAddress_);
-            uint256 maxSupply = uint256(uint64(info.tokenInfo.token.maxSupply));
-
-            // If maxSupply is 0, the token has no max supply
-            // thus we approve the maximum value
-            if (maxSupply != 0 && maxSupply < INT64_MAX) {
-                amount = maxSupply;
-            } else {
-                amount = INT64_MAX;
-            }
+    function transferTokenOut(address tokenAddress_, address to, uint256 amount) external onlyService {
+        if (HTS.isToken(tokenAddress_)) {
+            HTS.transferToken(tokenAddress_, address(this), to, amount);
         } else {
-            amount = UINT256_MAX;
+            IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.transfer.selector, to, amount));
         }
-        /**
-         * @dev Some tokens may not obey the infinite approval.
-         * Even so, it is unexpected to run out of allowance in practice.
-         * If needed, we can upgrade to allow replenishing the allowance in the future.
-         *
-         * @notice HTS tokens have a maximum supply of 2^63-1 (int64.max).
-         */
-        IERC20(tokenAddress_).safeCall(abi.encodeWithSelector(IERC20.approve.selector, interchainTokenService, amount));
     }
 
     /**
