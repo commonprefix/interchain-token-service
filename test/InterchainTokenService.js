@@ -892,6 +892,15 @@ describe('Interchain Token Service', () => {
             const tokenManager = await getContractAt('TokenManager', tokenManagerAddress, wallet);
             expect(await tokenManager.tokenAddress()).to.equal(tokenAddress);
             expect(await tokenManager.hasRole(service.address, OPERATOR_ROLE)).to.be.true;
+
+            // Mint/burn reach HTS from the token manager's delegated code, so the supply key
+            // must be a delegatable contract id key (a contract id key is rejected there).
+            const hts = await getContractAt('IHederaTokenService', '0x0000000000000000000000000000000000000167', wallet);
+            const SUPPLY_KEY_TYPE = 16;
+            const [responseCode, supplyKey] = await hts.callStatic.getTokenKey(tokenAddress, SUPPLY_KEY_TYPE);
+            expect(responseCode).to.equal(22);
+            expect(supplyKey.contractId).to.equal(AddressZero);
+            expectNonZeroAddress(supplyKey.delegatableContractId);
         });
     });
 

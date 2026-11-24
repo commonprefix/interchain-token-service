@@ -38,15 +38,16 @@ contract InterchainTokenDeployer is IInterchainTokenDeployer {
         token.symbol = symbol;
         token.treasury = self;
 
-        // Set the token service as a minter to allow it to mint and burn tokens.
+        // Set the token manager as the supply key to allow it to mint and burn tokens.
+        // A delegatable contract id key is used since mint/burn reach HTS from delegated code (token manager implementation).
         IHederaTokenService.TokenKey[] memory tokenKeys = new IHederaTokenService.TokenKey[](1);
         // Define the supply keys - minter
         IHederaTokenService.KeyValue memory supplyKeyITS = IHederaTokenService.KeyValue({
             inheritAccountKey: false,
-            contractId: self,
+            contractId: address(0),
             ed25519: '',
             ECDSA_secp256k1: '',
-            delegatableContractId: address(0)
+            delegatableContractId: self
         });
         tokenKeys[0] = IHederaTokenService.TokenKey({ keyType: HTS.SUPPLY_KEY_BIT, key: supplyKeyITS });
         token.tokenKeys = tokenKeys;
